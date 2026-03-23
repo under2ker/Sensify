@@ -87,6 +87,10 @@ export interface ExtractionResult {
   extractedLinks?: ExtractedLink[];
   /** Код из источника + пояснения */
   codeSnippets?: CodeSnippet[];
+  /** Закрепить в сайдбаре «Сохранённые» */
+  isPinned?: boolean;
+  /** ISO-дата перемещения в корзину; если задано — запись в «Корзина» */
+  deletedAt?: string | null;
 }
 
 export interface ExportOptions {

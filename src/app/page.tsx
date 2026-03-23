@@ -68,6 +68,7 @@ import { Footer } from "@/components/footer";
 import { BackgroundEffects } from "@/components/background-effects";
 import { useAppStore } from "@/lib/store";
 import { generateId, isValidUrl, isYouTubeUrl, isTelegramUrl, isNotionUrl, isRssUrl, isGithubUrl, isRedditUrl } from "@/lib/utils";
+import { validateExtractInput } from "@/lib/extract-input-validation";
 import { toast } from "sonner";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -95,6 +96,7 @@ export default function HomePage() {
     currentResult,
     savedPage,
     setStreamingChars,
+    setInputValidationMessage,
   } = useAppStore(
     useShallow((s) => ({
       activeInputTab: s.activeInputTab,
@@ -113,6 +115,7 @@ export default function HomePage() {
       currentResult: s.currentResult,
       savedPage: s.savedPage,
       setStreamingChars: s.setStreamingChars,
+      setInputValidationMessage: s.setInputValidationMessage,
     }))
   );
 
@@ -170,6 +173,7 @@ export default function HomePage() {
       setCurrentResult(result);
       if (settings.saveToHistory !== false) addToHistory(result);
       setStatus("success");
+      setErrorMessage("");
       setLimitResetsAt(null);
       toast.success("Повторное извлечение готово!");
     } catch (error: unknown) {
@@ -181,6 +185,16 @@ export default function HomePage() {
   };
 
   const handleExtract = async (retryCount = 0) => {
+    if (retryCount === 0) {
+      const check = validateExtractInput(activeInputTab, inputValue, pdfFile);
+      if (!check.ok) {
+        setInputValidationMessage(check.message);
+        toast.error(check.message);
+        return;
+      }
+      setInputValidationMessage(null);
+    }
+
     setStatus("loading");
     setErrorMessage("");
     setLimitReached(false);
@@ -298,6 +312,7 @@ export default function HomePage() {
                 setCurrentResult(result);
                 if (settings.saveToHistory !== false) addToHistory(result);
                 setStatus("success");
+                setErrorMessage("");
                 setLimitResetsAt(null);
                 setStreamingChars(0);
                 toast.success("Знания успешно извлечены!");
@@ -354,6 +369,7 @@ export default function HomePage() {
       setCurrentResult(result);
       if (settings.saveToHistory !== false) addToHistory(result);
       setStatus("success");
+      setErrorMessage("");
       setLimitResetsAt(null);
       toast.success("Знания успешно извлечены!");
 
@@ -600,6 +616,7 @@ export default function HomePage() {
             <LazyOutputPanel
               onReExtract={handleReExtract}
               onCancel={() => abortRef.current?.abort()}
+              onRetryExtract={() => void handleExtract(0)}
             />
           </motion.div>
 

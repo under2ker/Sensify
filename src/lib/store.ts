@@ -53,6 +53,10 @@ interface AppState {
   clearHistory: () => void;
   loadFromHistory: (id: string) => void;
   importHistory: (items: ExtractionResult[]) => void;
+  togglePinHistoryItem: (id: string) => void;
+  trashHistoryItem: (id: string) => void;
+  restoreHistoryItem: (id: string) => void;
+  emptyTrash: () => void;
 
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -80,6 +84,10 @@ interface AppState {
   addUserPreset: (name: string) => { ok: true } | { ok: false; reason: "empty" | "limit" };
   removeUserPreset: (id: string) => void;
   applyUserPreset: (preset: SavedUserPreset) => void;
+
+  /** Ошибка валидации поля ввода (не persist) */
+  inputValidationMessage: string | null;
+  setInputValidationMessage: (msg: string | null) => void;
 }
 
 const MAX_USER_PRESETS = 14;
@@ -88,7 +96,8 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       activeInputTab: "github",
-      setActiveInputTab: (tab) => set({ activeInputTab: tab, inputValue: "" }),
+      setActiveInputTab: (tab) =>
+        set({ activeInputTab: tab, inputValue: "", inputValidationMessage: null }),
 
       activeOutputTab: "summary",
       setActiveOutputTab: (tab) => set({ activeOutputTab: tab }),
@@ -125,7 +134,14 @@ export const useAppStore = create<AppState>()(
       history: [],
       addToHistory: (result) =>
         set((state) => ({
-          history: [result, ...state.history].slice(0, 50),
+          history: [
+            {
+              ...result,
+              isPinned: result.isPinned ?? false,
+              deletedAt: result.deletedAt ?? undefined,
+            },
+            ...state.history,
+          ].slice(0, 50),
         })),
       removeFromHistory: (id) =>
         set((state) => ({
@@ -134,8 +150,34 @@ export const useAppStore = create<AppState>()(
       clearHistory: () => set({ history: [] }),
       importHistory: (items) =>
         set({
-          history: (items ?? []).slice(0, 50),
+          history: (items ?? []).slice(0, 50).map((h) => ({
+            ...h,
+            isPinned: h.isPinned ?? false,
+            deletedAt: h.deletedAt ?? undefined,
+          })),
         }),
+      togglePinHistoryItem: (id) =>
+        set((state) => ({
+          history: state.history.map((h) =>
+            h.id === id ? { ...h, isPinned: !(h.isPinned ?? false) } : h,
+          ),
+        })),
+      trashHistoryItem: (id) =>
+        set((state) => ({
+          history: state.history.map((h) =>
+            h.id === id ? { ...h, deletedAt: new Date().toISOString() } : h,
+          ),
+        })),
+      restoreHistoryItem: (id) =>
+        set((state) => ({
+          history: state.history.map((h) =>
+            h.id === id ? { ...h, deletedAt: undefined } : h,
+          ),
+        })),
+      emptyTrash: () =>
+        set((state) => ({
+          history: state.history.filter((h) => !h.deletedAt),
+        })),
       loadFromHistory: (id) => {
         const item = get().history.find((h) => h.id === id);
         if (item) {
@@ -224,6 +266,9 @@ export const useAppStore = create<AppState>()(
             quality: preset.quality,
           },
         })),
+
+      inputValidationMessage: null,
+      setInputValidationMessage: (msg) => set({ inputValidationMessage: msg }),
     }),
     {
       name: "sensify-storage",
@@ -287,6 +332,11 @@ export const useAppStore = create<AppState>()(
           p.history = p.history.map((h) => ({
             ...h,
             sourceType: h.sourceType === "substack" ? "url" : h.sourceType,
+            isPinned: typeof (h as { isPinned?: unknown }).isPinned === "boolean" ? (h as { isPinned: boolean }).isPinned : false,
+            deletedAt:
+              typeof (h as { deletedAt?: unknown }).deletedAt === "string"
+                ? (h as { deletedAt: string }).deletedAt
+                : undefined,
           }));
         }
         if (s?.settings && !("customPrompt" in s.settings))

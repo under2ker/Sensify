@@ -44,6 +44,7 @@ import {
 } from "@/lib/demo-work-links";
 import { toast } from "sonner";
 import type { InputType, ExtractionPreset } from "@/types";
+import { isExtractFieldInvalid } from "@/lib/extract-input-validation";
 
 const groqModels = [
   { value: "llama-3.1-8b-instant", label: "Llama 3.1 8B" },
@@ -130,6 +131,8 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
     addUserPreset,
     removeUserPreset,
     applyUserPreset,
+    inputValidationMessage,
+    setInputValidationMessage,
   } = useAppStore(
     useShallow((s) => ({
       activeInputTab: s.activeInputTab,
@@ -153,8 +156,23 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
       addUserPreset: s.addUserPreset,
       removeUserPreset: s.removeUserPreset,
       applyUserPreset: s.applyUserPreset,
+      inputValidationMessage: s.inputValidationMessage,
+      setInputValidationMessage: s.setInputValidationMessage,
     }))
   );
+
+  useEffect(() => {
+    setInputValidationMessage(null);
+  }, [inputValue, pdfFile, activeInputTab, setInputValidationMessage]);
+
+  const fieldHasError = (tab: InputType) => {
+    const v = inputValue.trim();
+    if (inputValidationMessage && activeInputTab === tab) return true;
+    if (tab === "url") return urlTouched && v.length > 0 && !isValidUrl(v);
+    return isExtractFieldInvalid(tab, inputValue, pdfFile);
+  };
+
+  const pdfFieldError = Boolean(inputValidationMessage && activeInputTab === "pdf");
 
   const handleSaveUserPreset = () => {
     const r = addUserPreset(presetDraft);
@@ -355,9 +373,10 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onBlur={() => setUrlTouched(true)}
+                aria-invalid={fieldHasError("url")}
                 className={cn(
                   "w-full h-9 px-3 rounded-lg bg-muted/50 border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all",
-                  urlTouched && inputValue.trim() && !isValidUrl(inputValue.trim())
+                  fieldHasError("url")
                     ? "border-destructive focus:ring-destructive/50"
                     : "border-border"
                 )}
@@ -413,7 +432,11 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
                 placeholder="https://github.com/owner/repo или /blob/... /issues/... /discussions/..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg bg-muted/50 border border-border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                aria-invalid={fieldHasError("github")}
+                className={cn(
+                  "w-full h-9 px-3 rounded-lg bg-muted/50 border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all",
+                  fieldHasError("github") ? "border-destructive focus:ring-destructive/50" : "border-border"
+                )}
               />
               <p className="text-xs text-muted-foreground">
                 Репозитории, документация, обсуждения
@@ -462,7 +485,11 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
                 placeholder="https://reddit.com/r/subreddit/comments/..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg bg-muted/50 border border-border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                aria-invalid={fieldHasError("reddit")}
+                className={cn(
+                  "w-full h-9 px-3 rounded-lg bg-muted/50 border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all",
+                  fieldHasError("reddit") ? "border-destructive focus:ring-destructive/50" : "border-border"
+                )}
               />
               <p className="text-xs text-muted-foreground">
                 Посты, комментарии, обсуждения
@@ -501,7 +528,9 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
                 "relative flex flex-col items-center justify-center rounded-lg border border-dashed py-4 px-3 transition-all cursor-pointer",
                 isDragActive
                   ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/50 hover:bg-muted/30"
+                  : pdfFieldError
+                    ? "border-destructive bg-destructive/5"
+                    : "border-border hover:border-primary/50 hover:bg-muted/30"
               )}
             >
               <input {...getInputProps()} />
@@ -595,7 +624,11 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
                 placeholder="https://youtube.com/watch?v=..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg bg-muted/50 border border-border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                aria-invalid={fieldHasError("youtube")}
+                className={cn(
+                  "w-full h-9 px-3 rounded-lg bg-muted/50 border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all",
+                  fieldHasError("youtube") ? "border-destructive focus:ring-destructive/50" : "border-border"
+                )}
               />
               <p className="text-xs text-muted-foreground">
                 Извлечение из транскрипции / субтитров видео
@@ -630,7 +663,11 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
                 placeholder="https://t.me/channel/123 или t.me/c/channelname/456"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg bg-muted/50 border border-border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                aria-invalid={fieldHasError("telegram")}
+                className={cn(
+                  "w-full h-9 px-3 rounded-lg bg-muted/50 border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all",
+                  fieldHasError("telegram") ? "border-destructive focus:ring-destructive/50" : "border-border"
+                )}
               />
               <p className="text-xs text-muted-foreground">
                 Публичные посты и каналы
@@ -665,7 +702,11 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
                 placeholder="https://notion.so/workspace/Page-123..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg bg-muted/50 border border-border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                aria-invalid={fieldHasError("notion")}
+                className={cn(
+                  "w-full h-9 px-3 rounded-lg bg-muted/50 border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all",
+                  fieldHasError("notion") ? "border-destructive focus:ring-destructive/50" : "border-border"
+                )}
               />
               <p className="text-xs text-muted-foreground">
                 Страница должна быть опубликована для веб-доступа
@@ -700,7 +741,11 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
                 placeholder="https://example.com/feed.xml или /rss"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg bg-muted/50 border border-border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                aria-invalid={fieldHasError("rss")}
+                className={cn(
+                  "w-full h-9 px-3 rounded-lg bg-muted/50 border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all",
+                  fieldHasError("rss") ? "border-destructive focus:ring-destructive/50" : "border-border"
+                )}
               />
               <p className="text-xs text-muted-foreground">
                 Блоги, подкасты, новостные ленты
@@ -728,7 +773,11 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
                 placeholder="Вставьте статью, заметки или любой текст, из которого хотите извлечь знания..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="w-full h-28 px-3 py-2 rounded-lg bg-muted/50 border border-border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
+                aria-invalid={fieldHasError("text")}
+                className={cn(
+                  "w-full h-28 px-3 py-2 rounded-lg bg-muted/50 border text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none",
+                  fieldHasError("text") ? "border-destructive focus:ring-destructive/50" : "border-border"
+                )}
               />
               <p className="text-xs text-muted-foreground">
                 {inputValue.length > 0
@@ -913,6 +962,11 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
           />
           <span className="text-[11px] text-muted-foreground">В историю</span>
         </label>
+        {inputValidationMessage ? (
+          <p className="text-[11px] font-medium text-destructive leading-snug" role="alert">
+            {inputValidationMessage}
+          </p>
+        ) : null}
         {limitReached && (
           <div
             className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2 py-1.5 text-[10px] text-amber-950 dark:text-amber-100/95 leading-snug"

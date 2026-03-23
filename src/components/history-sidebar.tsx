@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock,
@@ -19,6 +20,8 @@ import {
   Rss,
   Github,
   MessageSquare,
+  Bookmark,
+  RotateCcw,
 } from "lucide-react";
 import { EmptyStateIllustration } from "@/components/empty-state-illustration";
 import { Button } from "@/components/ui/button";
@@ -28,6 +31,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { toast } from "sonner";
 import { cn, formatDate, truncate } from "@/lib/utils";
 import type { InputType, LegacySourceType } from "@/types";
+
+type HistorySidebarTab = "recent" | "saved" | "trash";
 
 const sourceIcons: Record<InputType, React.ReactNode> = {
   url: <Globe className="w-3.5 h-3.5" />,
@@ -47,6 +52,7 @@ function historySourceIcon(t: InputType | LegacySourceType): React.ReactNode {
 }
 
 export function HistorySidebar() {
+  const [historyTab, setHistoryTab] = useState<HistorySidebarTab>("recent");
   const {
     history,
     searchQuery,
@@ -58,6 +64,10 @@ export function HistorySidebar() {
     currentResult,
     sidebarOpen,
     setSidebarOpen,
+    togglePinHistoryItem,
+    trashHistoryItem,
+    restoreHistoryItem,
+    emptyTrash,
   } = useAppStore(
     useShallow((s) => ({
       history: s.history,
@@ -70,8 +80,35 @@ export function HistorySidebar() {
       currentResult: s.currentResult,
       sidebarOpen: s.sidebarOpen,
       setSidebarOpen: s.setSidebarOpen,
+      togglePinHistoryItem: s.togglePinHistoryItem,
+      trashHistoryItem: s.trashHistoryItem,
+      restoreHistoryItem: s.restoreHistoryItem,
+      emptyTrash: s.emptyTrash,
     }))
   );
+
+  const { recentList, savedList, trashList } = useMemo(() => {
+    const recent = history.filter((h) => !h.deletedAt && !h.isPinned);
+    const saved = history.filter((h) => !h.deletedAt && h.isPinned);
+    const trash = history.filter((h) => Boolean(h.deletedAt));
+    return { recentList: recent, savedList: saved, trashList: trash };
+  }, [history]);
+
+  const tabSource =
+    historyTab === "recent" ? recentList : historyTab === "saved" ? savedList : trashList;
+
+  const filteredHistory = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return tabSource
+      .filter(
+        (item) =>
+          item.title.toLowerCase().includes(q) ||
+          item.tags.some((tag) => tag.toLowerCase().includes(q))
+      )
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [tabSource, searchQuery]);
+
+  const trashCount = trashList.length;
 
   const handleExport = () => {
     const data = JSON.stringify({ history, exportedAt: new Date().toISOString() }, null, 2);
@@ -109,14 +146,6 @@ export function HistorySidebar() {
     input.click();
   };
 
-  const filteredHistory = history.filter(
-    (item) =>
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.tags.some((tag) =>
-        tag.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-  );
-
   return (
     <>
       <AnimatePresence>
@@ -141,9 +170,7 @@ export function HistorySidebar() {
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-muted-foreground" />
                     <h3 className="text-sm font-semibold">История</h3>
-                    <span className="text-xs text-muted-foreground">
-                      ({history.length})
-                    </span>
+                    <span className="text-xs text-muted-foreground">({history.length})</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Tooltip>
@@ -162,7 +189,20 @@ export function HistorySidebar() {
                       </TooltipTrigger>
                       <TooltipContent>Импорт истории (JSON)</TooltipContent>
                     </Tooltip>
-                    {history.length > 0 && (
+                    {historyTab === "trash" && trashCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-destructive hover:text-destructive"
+                        onClick={() => {
+                          emptyTrash();
+                          toast.success("Корзина очищена");
+                        }}
+                      >
+                        Очистить корзину
+                      </Button>
+                    )}
+                    {historyTab === "recent" && history.length > 0 && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -199,6 +239,30 @@ export function HistorySidebar() {
                       <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
                     </button>
                   )}
+                </div>
+                <div className="flex rounded-lg bg-muted/40 p-0.5 gap-0.5 mt-2">
+                  {(
+                    [
+                      { id: "recent" as const, label: "Недавние", count: recentList.length },
+                      { id: "saved" as const, label: "Сохранённые", count: savedList.length },
+                      { id: "trash" as const, label: "Корзина", count: trashCount },
+                    ] as const
+                  ).map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setHistoryTab(t.id)}
+                      className={cn(
+                        "flex-1 rounded-md px-1.5 py-1 text-[10px] font-medium transition-colors",
+                        historyTab === t.id
+                          ? "bg-card text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {t.label}
+                      <span className="text-muted-foreground/80"> {t.count}</span>
+                    </button>
+                  ))}
                 </div>
                 <div className="flex gap-1 mt-2">
                   <Tooltip>
@@ -239,6 +303,14 @@ export function HistorySidebar() {
                             Сделайте первое извлечение — URL, PDF, YouTube или текст
                           </p>
                         </>
+                      ) : tabSource.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          {historyTab === "saved"
+                            ? "Нет закреплённых записей. Нажмите закладку у записи в «Недавние»."
+                            : historyTab === "trash"
+                              ? "Корзина пуста"
+                              : "Нет недавних записей"}
+                        </p>
                       ) : (
                         <p className="text-xs text-muted-foreground">
                           Ничего не найдено по запросу
@@ -288,15 +360,93 @@ export function HistorySidebar() {
                               </div>
                             </div>
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFromHistory(item.id);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
-                          </button>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            {historyTab === "trash" ? (
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        restoreHistoryItem(item.id);
+                                        toast.success("Восстановлено");
+                                      }}
+                                      className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
+                                      aria-label="Восстановить"
+                                    >
+                                      <RotateCcw className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Восстановить</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeFromHistory(item.id);
+                                      }}
+                                      className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
+                                      aria-label="Удалить навсегда"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Удалить навсегда</TooltipContent>
+                                </Tooltip>
+                              </>
+                            ) : (
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        togglePinHistoryItem(item.id);
+                                      }}
+                                      className={cn(
+                                        "p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity",
+                                        item.isPinned && "opacity-100"
+                                      )}
+                                      aria-label={item.isPinned ? "Снять с сохранённых" : "В сохранённые"}
+                                    >
+                                      <Bookmark
+                                        className={cn(
+                                          "w-3.5 h-3.5",
+                                          item.isPinned
+                                            ? "fill-primary text-primary"
+                                            : "text-muted-foreground hover:text-primary"
+                                        )}
+                                      />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    {item.isPinned ? "Снять с сохранённых" : "В сохранённые"}
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        trashHistoryItem(item.id);
+                                        toast.success("В корзине");
+                                      }}
+                                      className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
+                                      aria-label="В корзину"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>В корзину</TooltipContent>
+                                </Tooltip>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </motion.div>
                     ))

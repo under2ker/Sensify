@@ -33,6 +33,7 @@ import {
   Link2,
   ExternalLink,
   Code2,
+  AlertCircle,
 } from "lucide-react";
 import { ExtractionSkeleton } from "@/components/extraction-skeleton";
 import { EmptyStateIllustration } from "@/components/empty-state-illustration";
@@ -529,9 +530,12 @@ const FlashcardItem = memo(function FlashcardItem({
 export function OutputPanel({
   onReExtract,
   onCancel,
+  onRetryExtract,
 }: {
   onReExtract?: (content: string, preset: string, sourceLabel: string) => Promise<void>;
   onCancel?: () => void;
+  /** Повторить основное извлечение после ошибки AI */
+  onRetryExtract?: () => void;
 }) {
   const [reExtractOpen, setReExtractOpen] = useState(false);
   const [expandLoading, setExpandLoading] = useState<number | null>(null);
@@ -558,6 +562,7 @@ export function OutputPanel({
     updateCurrentResult,
     streamingChars,
     settings,
+    errorMessage,
   } = useAppStore(
     useShallow((s) => ({
       currentResult: s.currentResult,
@@ -570,6 +575,7 @@ export function OutputPanel({
       updateCurrentResult: s.updateCurrentResult,
       streamingChars: s.streamingChars,
       settings: s.settings,
+      errorMessage: s.errorMessage,
     }))
   );
 
@@ -721,6 +727,34 @@ export function OutputPanel({
     }
   };
 
+  if (status === "error" && !currentResult && !savedPage) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md space-y-4"
+        >
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+            <AlertCircle className="h-7 w-7" aria-hidden />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Не удалось извлечь</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed break-words">
+              {errorMessage || "Проверьте источник, ключ API или попробуйте снова."}
+            </p>
+          </div>
+          {onRetryExtract ? (
+            <Button type="button" className="w-full sm:w-auto" onClick={() => onRetryExtract()}>
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Повторить
+            </Button>
+          ) : null}
+        </motion.div>
+      </div>
+    );
+  }
+
   if (!currentResult && !savedPage && status !== "loading") {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center px-8">
@@ -871,6 +905,26 @@ export function OutputPanel({
 
   return (
     <div className="flex flex-col h-full">
+      {status === "error" && errorMessage ? (
+        <div
+          className="mb-3 flex flex-col gap-2 rounded-lg border border-destructive/35 bg-destructive/10 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+          role="alert"
+        >
+          <div className="flex min-w-0 items-start gap-2 text-left">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-destructive">Ошибка при последнем извлечении</p>
+              <p className="text-[11px] text-muted-foreground leading-snug break-words mt-0.5">{errorMessage}</p>
+            </div>
+          </div>
+          {onRetryExtract ? (
+            <Button type="button" size="sm" variant="outline" className="shrink-0 border-destructive/40" onClick={() => onRetryExtract()}>
+              <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+              Повторить
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       {currentResult.imageUrl && (
         <ImagePreview url={currentResult.imageUrl} />
       )}
