@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { createShareRecord } from "@/lib/db/repositories/share.repository";
 import { requireString, optionalString } from "@/lib/validate";
 import { handleApiError } from "@/lib/api-error-handler";
@@ -74,7 +76,17 @@ export async function POST(request: NextRequest) {
       codeSnippets,
     });
 
-    const share = await createShareRecord({ data, expiresAt });
+    let shareUserId: string | undefined;
+    const session = await auth();
+    if (session?.user?.email) {
+      const u = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true },
+      });
+      if (u) shareUserId = u.id;
+    }
+
+    const share = await createShareRecord({ data, expiresAt, userId: shareUserId });
 
     return NextResponse.json({ id: share.id });
   } catch (e) {

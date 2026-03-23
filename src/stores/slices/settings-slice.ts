@@ -6,7 +6,13 @@ import { generateId } from "@/lib/utils";
 
 export type SettingsSlice = Pick<
   AppState,
-  "settings" | "updateSettings" | "userPresets" | "addUserPreset" | "removeUserPreset" | "applyUserPreset"
+  | "settings"
+  | "updateSettings"
+  | "userPresets"
+  | "setUserPresets"
+  | "addUserPreset"
+  | "removeUserPreset"
+  | "applyUserPreset"
 >;
 
 export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> = (set, get) => ({
@@ -36,6 +42,7 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
     })),
 
   userPresets: [],
+  setUserPresets: (presets) => set({ userPresets: presets }),
   addUserPreset: (name) => {
     const trimmed = name.trim();
     if (!trimmed) return { ok: false, reason: "empty" };

@@ -49,11 +49,16 @@ export default function RegisterPage() {
           <h1 className="text-xl font-bold mb-6">Создать аккаунт</h1>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs text-muted-foreground font-medium mb-1.5 block">
+              <label
+                htmlFor="register-email"
+                className="text-xs text-muted-foreground font-medium mb-1.5 block"
+              >
                 Email
               </label>
               <input
+                id="register-email"
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -62,11 +67,16 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground font-medium mb-1.5 block">
+              <label
+                htmlFor="register-password"
+                className="text-xs text-muted-foreground font-medium mb-1.5 block"
+              >
                 Пароль
               </label>
               <input
+                id="register-password"
                 type="password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -76,11 +86,16 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground font-medium mb-1.5 block">
+              <label
+                htmlFor="register-name"
+                className="text-xs text-muted-foreground font-medium mb-1.5 block"
+              >
                 Имя <span className="text-muted-foreground/70">(необязательно)</span>
               </label>
               <input
+                id="register-name"
                 type="text"
+                autoComplete="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm outline-none focus:ring-2 focus:ring-ring"

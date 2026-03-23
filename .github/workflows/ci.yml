@@ -37,3 +37,69 @@ jobs:
       # Phase 0 TZ Production: блокируем сборку при критических уязвимостях
       - name: Audit (critical)
         run: npm audit --audit-level=critical
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: npm run test:e2e
+        env:
+          CI: true
+          DATABASE_URL: "file:./dev.db"
+          AUTH_SECRET: "ci-test-secret-at-least-32-chars-long"
+          GROQ_API_KEY: "gsk_test"
+          NEXT_TELEMETRY_DISABLED: "1"
+
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium (Playwright) for Lighthouse
+        run: npx playwright install chromium
+
+      - name: Chromium path for Lighthouse CI
+        id: chromium
+        run: |
+          CHROME=$(node -p "require('@playwright/test').chromium.executablePath()")
+          echo "path=$CHROME" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: "file:./dev.db"
+          AUTH_SECRET: "ci-test-secret-at-least-32-chars-long"
+          GROQ_API_KEY: "gsk_test"
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: Lighthouse CI
+        run: npm run lighthouse:ci
+        env:
+          LHCI_CHROME_PATH: ${{ steps.chromium.outputs.path }}
+          DATABASE_URL: "file:./dev.db"
+          AUTH_SECRET: "ci-test-secret-at-least-32-chars-long"
+          GROQ_API_KEY: "gsk_test"
+          NEXT_TELEMETRY_DISABLED: "1"

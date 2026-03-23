@@ -3,8 +3,8 @@ import { test, expect } from "@playwright/test";
 test.describe("Страница входа", () => {
   test("загружается и отображает форму", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByRole("textbox", { name: /email|почта/i })).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole("textbox", { name: /пароль|password/i })).toBeVisible();
+    await expect(page.getByLabel("Email", { exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('input[type="password"]')).toBeVisible();
   });
 
   test("есть ссылка на регистрацию", async ({ page }) => {

@@ -10,3 +10,8 @@ export async function findUserByEmailWithSubscription(email: string) {
     include: { subscription: true },
   });
 }
+
+/** Минимальный запрос для метаданных платежа ЮKassa */
+export async function findUserIdByEmail(email: string): Promise<{ id: string } | null> {
+  return prisma.user.findUnique({ where: { email }, select: { id: true } });
+}

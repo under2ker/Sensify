@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const paths = ["/changelog", "/premium", "/about"] as const;
+const paths = ["/changelog", "/premium", "/about", "/developers"] as const;
 
 test.describe("Публичные страницы", () => {
   for (const path of paths) {

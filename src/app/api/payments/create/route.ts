@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { findUserIdByEmail } from "@/lib/db/repositories/user.repository";
 import { randomUUID } from "crypto";
 import { AuthError, ValidationError, ExternalServiceError } from "@/lib/errors";
 import { fetchWithRetry } from "@/lib/fetch-safe";
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       throw new ValidationError("Некорректный план (monthly или yearly)");
     }
 
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    const user = await findUserIdByEmail(session.user.email);
     if (!user) {
       throw new ValidationError("Пользователь не найден", { statusCode: 404 });
     }

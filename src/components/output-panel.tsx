@@ -34,11 +34,19 @@ import {
   ExternalLink,
   Code2,
   AlertCircle,
+  Languages,
 } from "lucide-react";
 import { ExtractionSkeleton } from "@/components/extraction-skeleton";
 import { EmptyStateIllustration } from "@/components/empty-state-illustration";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAppStore } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
@@ -47,6 +55,7 @@ import { copyToClipboard } from "@/lib/exporters";
 import { cn, truncate, getFaviconUrl, shortDisplayUrl } from "@/lib/utils";
 import { toast } from "sonner";
 import type { ExtractionPreset, ExtractionResult, InputType, LegacySourceType } from "@/types";
+import { shouldOfferTranslateToRussian } from "@/lib/translate-extraction-json";
 
 const sourceTypeIcons: Record<InputType, React.ReactNode> = {
   url: <Globe className="w-5 h-5" />,
@@ -168,8 +177,8 @@ const CopyButton = memo(function CopyButton({ text }: { text: string }) {
       size="sm"
       onClick={handleCopy}
       className="h-8 shrink-0 px-2"
-      title={copied ? "Скопировано" : "Копировать"}
-      aria-label={copied ? "Скопировано" : "Копировать"}
+      title={copied ? "Скопировано" : "Копировать текст открытого раздела (резюме, идеи, карточки…)"}
+      aria-label={copied ? "Скопировано" : "Копировать текст открытого раздела"}
     >
       {copied ? (
         <Check className="w-3.5 h-3.5 text-success shrink-0" />
@@ -182,12 +191,23 @@ const CopyButton = memo(function CopyButton({ text }: { text: string }) {
 
 function ShareButton({ result }: { result: ExtractionResult }) {
   const [loading, setLoading] = useState(false);
-  const [shared, setShared] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [publicUrl, setPublicUrl] = useState("");
   const shareLinkExpiresDays = useAppStore((s) => s.settings.shareLinkExpiresDays);
+
+  const openLinkDialog = (url: string) => {
+    setPublicUrl(url);
+    setDialogOpen(true);
+  };
+
+  const copyPublicLink = async () => {
+    if (!publicUrl) return;
+    await copyToClipboard(publicUrl);
+    toast.success("Ссылка скопирована");
+  };
 
   const handleShare = async () => {
     setLoading(true);
-    setShared(false);
     try {
       const res = await fetch("/api/share", {
         method: "POST",
@@ -197,10 +217,29 @@ function ShareButton({ result }: { result: ExtractionResult }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Ошибка");
       const url = `${typeof window !== "undefined" ? window.location.origin : ""}/s/${data.id}`;
-      await copyToClipboard(url);
-      setShared(true);
-      toast.success("Ссылка скопирована в буфер обмена");
-      setTimeout(() => setShared(false), 2000);
+
+      const sharePayload: ShareData = {
+        title: (result.title || "Sensify").trim().slice(0, 200) || "Sensify",
+        text: "Материал в Sensify — откройте по ссылке.",
+        url,
+      };
+
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        const allowed =
+          typeof navigator.canShare !== "function" || navigator.canShare(sharePayload);
+        if (allowed) {
+          try {
+            await navigator.share(sharePayload);
+            toast.success("Готово");
+            return;
+          } catch (e) {
+            const name = e && typeof e === "object" && "name" in e ? String((e as { name: string }).name) : "";
+            if (name === "AbortError") return;
+          }
+        }
+      }
+
+      openLinkDialog(url);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Не удалось создать ссылку");
     } finally {
@@ -209,23 +248,56 @@ function ShareButton({ result }: { result: ExtractionResult }) {
   };
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={handleShare}
-      disabled={loading}
-      className="gap-1.5"
-      title="Поделиться по ссылке"
-    >
-      {loading ? (
-        <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-      ) : shared ? (
-        <Check className="w-3.5 h-3.5 text-success" />
-      ) : (
-        <Share2 className="w-3.5 h-3.5" />
-      )}
-      <span className="hidden sm:inline">{shared ? "Скопировано" : "Поделиться"}</span>
-    </Button>
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => void handleShare()}
+        disabled={loading}
+        className="gap-1.5"
+        title="Создать публичную ссылку или отправить через системное меню «Поделиться»"
+      >
+        {loading ? (
+          <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <Share2 className="w-3.5 h-3.5" />
+        )}
+        <span className="hidden sm:inline">Поделиться</span>
+      </Button>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Публичная ссылка</DialogTitle>
+            <DialogDescription>
+              Откроется отдельная страница с этим материалом. Это не копирование текста раздела — для
+              текста вкладки используйте кнопку с иконкой копирования слева.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-1">
+            <input
+              readOnly
+              value={publicUrl}
+              onFocus={(e) => e.target.select()}
+              className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm font-mono text-foreground break-all"
+              aria-label="Публичный URL"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" onClick={() => void copyPublicLink()}>
+                <Copy className="w-3.5 h-3.5 mr-1.5" />
+                Копировать ссылку
+              </Button>
+              <Button type="button" size="sm" variant="outline" asChild>
+                <a href={publicUrl || "#"} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                  Открыть
+                </a>
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -552,6 +624,7 @@ export function OutputPanel({
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
+  const [translateLoading, setTranslateLoading] = useState(false);
   const {
     currentResult,
     savedPage,
@@ -693,6 +766,39 @@ export function OutputPanel({
     setChatMessages([]);
   }, [currentResult?.id]);
 
+  const handleTranslateAllToRussian = async () => {
+    if (!currentResult || translateLoading) return;
+    setTranslateLoading(true);
+    try {
+      const res = await fetch("/api/ai/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "translate",
+          result: currentResult,
+          provider: settings.provider,
+          groqApiKey: settings.provider === "groq" ? settings.groqApiKey : undefined,
+          groqModel: settings.provider === "groq" ? settings.groqModel : undefined,
+          geminiApiKey: settings.provider === "gemini" ? settings.geminiApiKey : undefined,
+          geminiModel: settings.provider === "gemini" ? settings.geminiModel : undefined,
+          ollamaUrl: settings.provider === "ollama" ? settings.ollamaUrl : undefined,
+          ollamaModel: settings.provider === "ollama" ? settings.ollamaModel : undefined,
+        }),
+      });
+      const data = (await res.json()) as { translated?: Partial<ExtractionResult>; error?: string };
+      if (!res.ok) throw new Error(data.error || "Ошибка перевода");
+      if (!data.translated || typeof data.translated !== "object") {
+        throw new Error("Пустой ответ сервера");
+      }
+      updateCurrentResult(data.translated);
+      toast.success("Весь материал переведён на русский");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Не удалось перевести");
+    } finally {
+      setTranslateLoading(false);
+    }
+  };
+
   const handleChatSend = async () => {
     const q = chatInput.trim();
     if (!q || !currentResult || chatLoading) return;
@@ -730,7 +836,11 @@ export function OutputPanel({
 
   if (status === "error" && !currentResult && !savedPage) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center px-8">
+      <div
+        className="flex flex-col items-center justify-center h-full text-center px-8"
+        role="status"
+        aria-live="polite"
+      >
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -794,7 +904,11 @@ export function OutputPanel({
 
   if (status === "loading") {
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full" role="status" aria-live="polite" aria-busy="true">
+        <p className="sr-only">
+          Идёт извлечение знаний
+          {streamingChars > 0 ? `, сгенерировано символов: ${streamingChars}` : ""}.
+        </p>
         <div className="flex items-center justify-between gap-3 mb-4">
           <div className="flex-1 min-w-0">
             <div className="h-1 overflow-hidden rounded-full bg-muted/50 mb-2">
@@ -963,22 +1077,45 @@ export function OutputPanel({
         onValueChange={setActiveOutputTab}
         className="flex-1 flex flex-col min-h-0"
       >
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-          <div className="min-w-0 max-w-full overflow-x-auto overscroll-x-contain pb-0.5 sm:pb-0 sm:max-w-[min(100%,52rem)] [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1">
-            <TabsList className="inline-flex h-auto min-h-9 w-max max-w-full flex-wrap justify-start gap-0.5 p-1">
-            {outputTabs.map((tab) => (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className="flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-xs sm:px-3"
-              >
-                {tab.icon}
-                <span className="hidden sm:inline">{tab.label}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          </div>
-          <div className="flex w-full min-w-0 max-w-full flex-wrap items-center justify-start gap-1 sm:ml-auto sm:w-auto sm:max-w-[min(100%,42rem)] sm:justify-end sm:pt-0.5">
+        <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-stretch md:gap-0">
+          <section
+            className="min-w-0 flex-1 flex flex-col gap-1.5 md:pr-4"
+            aria-label="Разделы результата"
+          >
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground select-none px-0.5">
+              Разделы
+            </span>
+            <div className="rounded-xl border border-border/90 bg-muted/30 p-1 shadow-sm">
+              <div className="max-w-full overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1">
+                <TabsList className="inline-flex h-auto min-h-9 w-max max-w-full flex-wrap justify-start gap-0.5 border-0 bg-transparent p-0 shadow-none">
+                  {outputTabs.map((tab) => (
+                    <TabsTrigger
+                      key={tab.value}
+                      value={tab.value}
+                      className="flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-xs sm:px-3 data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                    >
+                      {tab.icon}
+                      <span className="hidden sm:inline">{tab.label}</span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+            </div>
+          </section>
+
+          <div
+            className="hidden md:block w-px shrink-0 bg-border/70 self-stretch min-h-[3rem]"
+            aria-hidden
+          />
+
+          <section
+            className="flex min-w-0 w-full flex-col gap-1.5 md:w-auto md:shrink-0"
+            aria-label="Действия с результатом"
+          >
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground select-none px-0.5">
+              Действия
+            </span>
+            <div className="rounded-xl border border-dashed border-border/70 bg-background/80 p-1.5 flex flex-wrap items-center gap-1 shadow-sm">
             {onReExtract && buildReExtractContent().length > 100 && (
               <div className="relative">
                 <button
@@ -1037,9 +1174,28 @@ export function OutputPanel({
               <MessageSquare className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Вопросы</span>
             </button>
+            {shouldOfferTranslateToRussian(currentResult.language) && (
+              <button
+                type="button"
+                onClick={() => void handleTranslateAllToRussian()}
+                disabled={translateLoading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-primary/10 border border-transparent hover:border-primary/20 transition-all disabled:opacity-50"
+                title="Перевести резюме, идеи, карточки, заметки, подписи к коду и ссылкам на русский"
+                aria-label="Перевести весь материал на русский"
+                aria-busy={translateLoading}
+              >
+                {translateLoading ? (
+                  <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
+                ) : (
+                  <Languages className="w-3.5 h-3.5 shrink-0" />
+                )}
+                <span className="hidden sm:inline">На русский</span>
+              </button>
+            )}
             <ShareButton result={currentResult} />
             <CopyButton text={getSectionText()} />
-          </div>
+            </div>
+          </section>
         </div>
 
         <div className="flex-1 overflow-auto mt-1">

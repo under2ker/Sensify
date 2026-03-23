@@ -74,6 +74,7 @@ export interface AppState {
   updateSettings: (settings: Partial<AppSettings>) => void;
 
   userPresets: SavedUserPreset[];
+  setUserPresets: (presets: SavedUserPreset[]) => void;
   addUserPreset: (name: string) => { ok: true } | { ok: false; reason: "empty" | "limit" };
   removeUserPreset: (id: string) => void;
   applyUserPreset: (preset: SavedUserPreset) => void;

@@ -50,6 +50,13 @@ export default function AboutPage() {
               результат уйдёт POST-запросом на ваш URL (автоматизация, n8n, свой сервер). Подробности — в файле{" "}
               <strong>docs/WEBHOOK_DEVELOPERS.md</strong> в репозитории проекта.
             </p>
+            <p className="text-muted-foreground leading-relaxed mt-4">
+              Интеграции, экспорт и мониторинг одной страницей —{" "}
+              <Link href="/developers" className="text-primary font-medium hover:underline">
+                Разработчикам
+              </Link>
+              .
+            </p>
           </section>
 
           <section>

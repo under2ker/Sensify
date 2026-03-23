@@ -33,6 +33,18 @@ const changelog: {
   changes: { tag: keyof typeof TAG_COLORS; text: string }[];
 }[] = [
   {
+    version: "1.10.0",
+    date: "2026-03-23",
+    changes: [
+      { tag: "FEATURE", text: "«Мои пресеты» в облаке: таблица user_presets, GET/PUT /api/user/presets, слияние с локальными при входе." },
+      { tag: "FEATURE", text: "История: вкладка «Ссылки» — список публичных шарингов аккаунта (GET /api/user/shares); при POST /api/share сохраняется userId." },
+      { tag: "FEATURE", text: "Перевод всего результата на русский при английском языке материала: кнопка «На русский», POST /api/ai/action с action=translate." },
+      { tag: "UI", text: "Панель результата: подписи «Разделы» и «Действия», отдельные блоки и разделитель; «Поделиться» — Web Share или диалог со ссылкой; «Копировать» — только текст активной вкладки." },
+      { tag: "IMPROVE", text: "Страница /developers, sitemap.xml и robots.txt, расширение /api/health, E2E (seo, health, клавиатура /login), Lighthouse CI, колокол уведомлений в шапке (UI), документация ЮKassa." },
+      { tag: "UPDATE", text: "После обновления: npx prisma db push — user_presets и поле Share.userId (если ещё не применяли). Версия приложения 1.10.0." },
+    ],
+  },
+  {
     version: "1.9.3",
     date: "2026-03-23",
     changes: [

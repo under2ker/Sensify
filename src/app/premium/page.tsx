@@ -129,7 +129,12 @@ export default function PremiumPage() {
       }
       throw new Error("Нет ссылки на оплату");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Ошибка");
+      const msg = err instanceof Error ? err.message : "Ошибка";
+      toast.error(
+        msg.includes("Платежи не настроены")
+          ? "Платежи не настроены на сервере. См. docs/YOOKASSA_PAYMENTS.md или обратитесь к администратору."
+          : msg,
+      );
     } finally {
       setLoadingPlan(null);
     }
@@ -418,6 +423,10 @@ export default function PremiumPage() {
             {
               q: "Что такое «сохранение страницы»?",
               a: "Текущая страница (README, статья, пост) сохраняется через Readability в один Markdown с заголовком и ссылкой на источник — удобно открыть в редакторе или положить рядом с извлечённым резюме.",
+            },
+            {
+              q: "Как подключить оплату на своём сервере?",
+              a: "Для self-hosted или своего деплоя: переменные YOOKASSA_SHOP_ID, YOOKASSA_SECRET_KEY, webhook на /api/webhooks/yookassa и NEXTAUTH_URL. Пошагово — в репозитории docs/YOOKASSA_PAYMENTS.md.",
             },
           ]} />
         </section>

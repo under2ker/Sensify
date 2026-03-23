@@ -917,7 +917,8 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
         </div>
         <div className="rounded-md border border-border/60 bg-muted/20 px-2 py-1.5 space-y-1.5">
           <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-none">
-            Мои пресеты <span className="normal-case opacity-80">(локально)</span>
+            Мои пресеты{" "}
+            <span className="normal-case opacity-80">(браузер; при входе — аккаунт)</span>
           </p>
           <div className="flex gap-1">
             <input

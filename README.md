@@ -1,6 +1,6 @@
 # Sensify
 
-**v1.9.3** — AI для разработчиков: GitHub, Reddit, ссылки на доки, RSS, PDF, YouTube, Telegram, Notion и текст → структурированные заметки (Obsidian / Notion / Markdown, PDF, webhook). Облако (Groq, Gemini) или **Ollama** локально.
+**v1.10.0** — AI для разработчиков: GitHub, Reddit, ссылки на доки, RSS, PDF, YouTube, Telegram, Notion и текст → структурированные заметки (Obsidian / Notion / Markdown, PDF, webhook). Облако (Groq, Gemini) или **Ollama** локально.
 
 ## Документация и статус
 
@@ -8,7 +8,7 @@
 |----------|------------|
 | **[`docs/STATUS.md`](docs/STATUS.md)** | **Сделано / частично / не сделано** (главная сводка) |
 | [`docs/TZ_SENSIFY_FUNCTIONALITY.md`](docs/TZ_SENSIFY_FUNCTIONALITY.md) | Функциональное ТЗ, фазы, чеклист разработки |
-| [`docs/TZ_PRODUCTION_EDITION.md`](docs/TZ_PRODUCTION_EDITION.md) | Production-ТЗ (v1.9.3 → v2.0): архитектура, риски, roadmap |
+| [`docs/TZ_PRODUCTION_EDITION.md`](docs/TZ_PRODUCTION_EDITION.md) | Production-ТЗ (v1.10.0 → v2.0): архитектура, риски, roadmap |
 | [`docs/TZ_DESIGN.md`](docs/TZ_DESIGN.md) | Дизайн-требования |
 | [`docs/DESIGN_CHECKLIST.md`](docs/DESIGN_CHECKLIST.md) | Чеклист экранов по дизайну |
 | [`docs/PLANNED_FEATURES.md`](docs/PLANNED_FEATURES.md) | Краткий бэклог |
@@ -21,7 +21,7 @@
 - **Сохранить страницу** — извлечь читабельную статью по URL (Readability + Markdown)
 - **AI-извлечение** — резюме, ключевые идеи, флеш-карточки, структурированные заметки
 - **Стриминг** — текст появляется по мере генерации (можно отключить)
-- **Пресеты** — встроенные + **«Мои пресеты»** (сохранение текущего пресета, качества и своего промпта локально в браузере)
+- **Пресеты** — встроенные + **«Мои пресеты»** (до 14 шт., в браузере и синхронизация с аккаунтом при входе)
 - **AI-провайдеры** — Groq Cloud, **Google Gemini**, Ollama (локально)
 - **Экспорт** — Obsidian, Notion (JSON + **отправка в Notion по API**), Markdown, PDF (премиум), буфер обмена, «Красивый текст»
 - **Шаринг** — публичная ссылка на результат извлечения
@@ -173,7 +173,8 @@ e2e/                              # Playwright E2E тесты
 | `npm run start` | Продакшен |
 | `npm run lint` | ESLint |
 | `npm run test` | Юнит-тесты (Vitest) |
-| `npm run test:e2e` | E2E тесты (Playwright) |
+| `npm run test:e2e` | E2E тесты (Playwright); при первом запуске: `npx playwright install` |
+| `npm run lighthouse:ci` | Lighthouse CI (после `npm run build`; см. `lighthouserc.cjs`). Если Chrome не найден: `npx playwright install chromium` и переменная `LHCI_CHROME_PATH` = вывод `node -p "require('@playwright/test').chromium.executablePath()"` |
 | `npm run db:push` | Применить схему Prisma |
 | `npm run db:studio` | Prisma Studio |
 | `npm run seed-users` | Создать тестовых пользователей |
@@ -196,11 +197,11 @@ docker run -p 3000:3000 sensify
 
 **Самый простой способ:** [vercel.com/new](https://vercel.com/new) → Import GitHub-репозиторий → Vercel сам соберёт проект при каждом push в `main` (отдельный workflow не обязателен).
 
-**Переменные окружения на Vercel:** `GROQ_API_KEY`, `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL`, `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` (для платежей), при необходимости `GEMINI_API_KEY`, `SENTRY_DSN`, `TURSO_*` / `ENCRYPTION_KEY` — см. `.env.example`.
+**Переменные окружения на Vercel:** `GROQ_API_KEY`, `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL`, **`NEXT_PUBLIC_SITE_URL`** (канонический домен для OG, `sitemap.xml`, `robots.txt`), `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` (для платежей), при необходимости `GEMINI_API_KEY`, `SENTRY_DSN`, `TURSO_*` / `ENCRYPTION_KEY` — см. `.env.example`. **ЮKassa:** [docs/YOOKASSA_PAYMENTS.md](docs/YOOKASSA_PAYMENTS.md) (webhook, тест/бой, типичные ошибки).
 
 **Деплой через GitHub Actions** (workflow `.github/workflows/deploy-vercel.yml`): в репозитории GitHub → **Settings → Secrets and variables → Actions** добавьте `VERCEL_TOKEN` (токен с [vercel.com/account/tokens](https://vercel.com/account/tokens)), `VERCEL_ORG_ID` и `VERCEL_PROJECT_ID` (из **Vercel → Project → Settings → General**). Затем **Actions → Deploy (Vercel) → Run workflow** или push в `main`.
 
-SQLite не подходит для production на Vercel (несколько инстансов). Используйте Turso, PlanetScale или Supabase — см. [docs/DATABASE_PRODUCTION.md](docs/DATABASE_PRODUCTION.md), [docs/PLANNED_FEATURES.md](docs/PLANNED_FEATURES.md) и [docs/STATUS.md](docs/STATUS.md).
+SQLite не подходит для production на Vercel (несколько инстансов). Используйте Turso (в коде уже LibSQL-адаптер при `TURSO_*`) или см. альтернативы в [docs/DATABASE_PRODUCTION.md](docs/DATABASE_PRODUCTION.md); для распределённого rate limit — `UPSTASH_*` в [docs/PERFORMANCE_NOTES.md](docs/PERFORMANCE_NOTES.md). После выката полезно открыть **`GET /api/health`** (`databaseBackend`, `rateLimitDistributed`, `paymentsConfigured`).
 
 ---
 

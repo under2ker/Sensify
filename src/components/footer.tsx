@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Github, History, Info } from "lucide-react";
+import { Github, History, Info, Code2 } from "lucide-react";
 import { APP_NAME, APP_VERSION, APP_AUTHOR, APP_GITHUB, APP_LICENSE } from "@/lib/app-config";
 import { SensifyLogo } from "@/components/sensify-logo";
 
@@ -40,6 +40,10 @@ export function Footer() {
             <Link href="/changelog" className="flex items-center gap-1.5 hover:text-primary transition-colors">
               <History className="w-3.5 h-3.5" />
               История изменений
+            </Link>
+            <Link href="/developers" className="flex items-center gap-1.5 hover:text-primary transition-colors">
+              <Code2 className="w-3.5 h-3.5" />
+              Разработчикам
             </Link>
             <span>Лицензия: {APP_LICENSE}</span>
             <span className="hidden sm:inline max-w-[280px] md:max-w-none text-right md:text-left">

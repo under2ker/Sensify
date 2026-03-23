@@ -12,6 +12,7 @@ import {
   Crown,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { HeaderNotificationsBell } from "@/components/header-notifications-bell";
 import { Button } from "@/components/ui/button";
 import { InputPanel, type InputPanelRef } from "@/components/input-panel";
 
@@ -491,6 +492,12 @@ export default function HomePage() {
               >
                 Changelog
               </Link>
+              <Link
+                href="/developers"
+                className="rounded-full px-2.5 py-2 text-xs font-medium text-white/65 transition-colors hover:bg-white/10 hover:text-white lg:px-3"
+              >
+                Разработчикам
+              </Link>
             </nav>
           </div>
 
@@ -562,6 +569,7 @@ export default function HomePage() {
                   </Link>
                 ))}
             </div>
+            <HeaderNotificationsBell />
             <div className="[&_button]:text-white [&_button:hover]:bg-white/10 [&_svg]:text-white">
               <ThemeToggle />
             </div>

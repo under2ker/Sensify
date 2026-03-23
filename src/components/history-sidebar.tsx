@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock,
@@ -12,7 +14,6 @@ import {
   Type,
   X,
   ChevronLeft,
-  Sparkles,
   Download,
   Upload,
   MessageCircle,
@@ -22,6 +23,7 @@ import {
   MessageSquare,
   Bookmark,
   RotateCcw,
+  Share2,
 } from "lucide-react";
 import { EmptyStateIllustration } from "@/components/empty-state-illustration";
 import { Button } from "@/components/ui/button";
@@ -32,7 +34,9 @@ import { toast } from "sonner";
 import { cn, formatDate, truncate } from "@/lib/utils";
 import type { InputType, LegacySourceType } from "@/types";
 
-type HistorySidebarTab = "recent" | "saved" | "trash";
+type HistorySidebarTab = "recent" | "saved" | "trash" | "shared";
+
+type RemoteShareRow = { id: string; title: string; createdAt: string; expiresAt: string | null };
 
 const sourceIcons: Record<InputType, React.ReactNode> = {
   url: <Globe className="w-3.5 h-3.5" />,
@@ -53,6 +57,9 @@ function historySourceIcon(t: InputType | LegacySourceType): React.ReactNode {
 
 export function HistorySidebar() {
   const [historyTab, setHistoryTab] = useState<HistorySidebarTab>("recent");
+  const { data: session, status: sessionStatus } = useSession();
+  const [shareSummaries, setShareSummaries] = useState<RemoteShareRow[]>([]);
+  const [sharesLoading, setSharesLoading] = useState(false);
   const {
     history,
     searchQuery,
@@ -109,6 +116,32 @@ export function HistorySidebar() {
   }, [tabSource, searchQuery]);
 
   const trashCount = trashList.length;
+
+  useEffect(() => {
+    if (!sidebarOpen || sessionStatus !== "authenticated") {
+      if (!sidebarOpen) setShareSummaries([]);
+      return;
+    }
+    let cancelled = false;
+    setSharesLoading(true);
+    fetch("/api/user/shares")
+      .then((res) => res.json())
+      .then((body: { items?: RemoteShareRow[] }) => {
+        if (cancelled) return;
+        setShareSummaries(Array.isArray(body.items) ? body.items : []);
+      })
+      .catch(() => {
+        if (!cancelled) setShareSummaries([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSharesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sidebarOpen, sessionStatus, historyTab]);
+
+  const shareCount = sessionStatus === "authenticated" ? shareSummaries.length : 0;
 
   const handleExport = () => {
     const data = JSON.stringify({ history, exportedAt: new Date().toISOString() }, null, 2);
@@ -222,30 +255,33 @@ export function HistorySidebar() {
                     </Button>
                   </div>
                 </div>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Поиск по истории..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-8 pl-9 pr-8 rounded-lg bg-muted/50 border border-border text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
-                    </button>
-                  )}
-                </div>
-                <div className="flex rounded-lg bg-muted/40 p-0.5 gap-0.5 mt-2">
+                {historyTab !== "shared" && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Поиск по истории..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full h-8 pl-9 pr-8 rounded-lg bg-muted/50 border border-border text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
+                      </button>
+                    )}
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-0.5 mt-2 rounded-lg bg-muted/40 p-0.5">
                   {(
                     [
                       { id: "recent" as const, label: "Недавние", count: recentList.length },
                       { id: "saved" as const, label: "Сохранённые", count: savedList.length },
                       { id: "trash" as const, label: "Корзина", count: trashCount },
+                      { id: "shared" as const, label: "Ссылки", count: shareCount },
                     ] as const
                   ).map((t) => (
                     <button
@@ -253,14 +289,20 @@ export function HistorySidebar() {
                       type="button"
                       onClick={() => setHistoryTab(t.id)}
                       className={cn(
-                        "flex-1 rounded-md px-1.5 py-1 text-[10px] font-medium transition-colors",
+                        "rounded-md px-1.5 py-1.5 text-[10px] font-medium transition-colors text-left leading-tight",
                         historyTab === t.id
                           ? "bg-card text-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground"
                       )}
                     >
+                      {t.id === "shared" && (
+                        <Share2 className="inline w-3 h-3 mr-0.5 opacity-70 align-[-2px]" aria-hidden />
+                      )}
                       {t.label}
-                      <span className="text-muted-foreground/80"> {t.count}</span>
+                      <span className="text-muted-foreground/80">
+                        {" "}
+                        {t.id === "shared" && sharesLoading ? "…" : t.count}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -288,7 +330,54 @@ export function HistorySidebar() {
 
               <div className="flex-1 overflow-auto p-2">
                 <AnimatePresence>
-                  {filteredHistory.length === 0 ? (
+                  {historyTab === "shared" ? (
+                    <div className="px-1 py-2 space-y-2">
+                      {sessionStatus !== "authenticated" ? (
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Войдите в аккаунт — здесь появятся созданные вами{" "}
+                          <strong className="text-foreground/90">публичные ссылки</strong> (кнопка «Поделиться» в
+                          результате).
+                        </p>
+                      ) : sharesLoading ? (
+                        <p className="text-xs text-muted-foreground">Загрузка…</p>
+                      ) : shareSummaries.length === 0 ? (
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Пока нет ссылок. После извлечения нажмите «Поделиться» — запись появится здесь.
+                        </p>
+                      ) : (
+                        shareSummaries.map((row) => {
+                          const expired =
+                            row.expiresAt != null && new Date(row.expiresAt).getTime() < Date.now();
+                          return (
+                            <Link
+                              key={row.id}
+                              href={`/s/${row.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => setSidebarOpen(false)}
+                              className={cn(
+                                "block p-3 rounded-xl border border-border/80 bg-muted/20 hover:bg-muted/40 transition-colors",
+                                expired && "opacity-60"
+                              )}
+                            >
+                              <div className="flex items-start gap-2">
+                                <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                                  <Share2 className="w-3.5 h-3.5 text-muted-foreground" aria-hidden />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-medium truncate">{truncate(row.title, 44)}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                                    {formatDate(row.createdAt)}
+                                    {expired ? " · истекла" : ""}
+                                  </p>
+                                </div>
+                              </div>
+                            </Link>
+                          );
+                        })
+                      )}
+                    </div>
+                  ) : filteredHistory.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-center px-4">
                       {history.length === 0 ? (
                         <>

@@ -5,8 +5,9 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Providers } from "@/components/providers";
 import { SkipToContent } from "@/components/skip-to-content";
+import { getCanonicalSiteUrl } from "@/lib/site-url";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sensify.app";
+const siteUrl = getCanonicalSiteUrl();
 
 export const metadata: Metadata = {
   title: {

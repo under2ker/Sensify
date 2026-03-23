@@ -57,7 +57,7 @@ export type ExtractionPreset =
   | "technical_docs"
   | "release_notes";
 
-/** Локальный сохранённый пресет (браузер); синхронизация с аккаунтом — позже. */
+/** Сохранённый пользовательский пресет; при входе синхронизируется с аккаунтом (`/api/user/presets`). */
 export interface SavedUserPreset {
   id: string;
   name: string;

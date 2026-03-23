@@ -24,12 +24,21 @@
 | **Лимиты на `verify-groq` / `verify-gemini`** | Ограничение злоупотребления проверкой ключей. |
 | **Ранний `assertUrlSafeForFetch`** в extract | Не тянем контент по опасным URL. |
 
-### Ограничения in-memory лимитов
+### Распределённый лимит (Upstash)
 
-На **одном процессе** счётчики общие; при **нескольких инстансах** (Vercel, k8s) лимит не глобальный — для продакшена смотрите Redis / Upstash / Vercel KV (см. [`PLANNED_FEATURES.md`](./PLANNED_FEATURES.md)). Общая БД вместо SQLite на диске — [`DATABASE_PRODUCTION.md`](./DATABASE_PRODUCTION.md).
+В **`src/lib/distributed-rate-limit.ts`**: при **`UPSTASH_REDIS_REST_URL`** и **`UPSTASH_REDIS_REST_TOKEN`** burst на `POST /api/extract` и лимиты `verify-groq` / `verify-gemini` идут через **Upstash Redis** (скользящее окно) и совпадают между инстансами. Без этих переменных используется in-memory fallback (см. `memory-rate-limit.ts`).
+
+### Ограничения in-memory (если Upstash не задан)
+
+На **одном процессе** счётчики общие; при **нескольких инстансах** без Upstash лимит **не** глобальный. Общая БД вместо локального SQLite — [`DATABASE_PRODUCTION.md`](./DATABASE_PRODUCTION.md); указатель — [`PLANNED_FEATURES.md`](./PLANNED_FEATURES.md).
+
+## Lighthouse CI
+
+- Конфиг: **`lighthouserc.cjs`**; скрипт: **`npm run lighthouse:ci`** (после `npm run build` поднимает `npm run start` и проверяет `/` и `/about`).
+- В **GitHub Actions** job `lighthouse` в `.github/workflows/ci.yml`: пороги **accessibility** и **best-practices** ≥ **0.85** (error); **SEO** и **performance** — warn (perf на cold start в CI часто занижен).
 
 ## Идеи на будущее
 
 - Ленивый `react-markdown` для **вкладок вывода** (резюме/заметки) при первом показе — ещё один отдельный чанк.
 - Сегментация маршрутов (отдельные layout для `/admin`, `/profile`).
-- Lighthouse / Web Vitals в CI.
+- Web Vitals / field data (RUM) в проде.

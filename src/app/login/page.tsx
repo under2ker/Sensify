@@ -57,11 +57,16 @@ function LoginForm() {
           <h1 className="text-xl font-bold mb-6">Войти в аккаунт</h1>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs text-muted-foreground font-medium mb-1.5 block">
+              <label
+                htmlFor="login-email"
+                className="text-xs text-muted-foreground font-medium mb-1.5 block"
+              >
                 Email
               </label>
               <input
+                id="login-email"
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -70,11 +75,16 @@ function LoginForm() {
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground font-medium mb-1.5 block">
+              <label
+                htmlFor="login-password"
+                className="text-xs text-muted-foreground font-medium mb-1.5 block"
+              >
                 Пароль
               </label>
               <input
+                id="login-password"
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

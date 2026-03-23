@@ -1,6 +1,6 @@
 {
   "name": "sensify",
-  "version": "1.9.3",
+  "version": "1.10.0",
   "private": true,
   "scripts": {
     "dev": "node scripts/dev-banner.mjs",
@@ -17,6 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "lighthouse:ci": "lhci autorun",
     "demo-pdf": "node scripts/generate-demo-pdf.mjs"
   },
   "dependencies": {
@@ -62,6 +63,7 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/typography": "^0.5.16",
     "@types/bcryptjs": "^2.4.6",

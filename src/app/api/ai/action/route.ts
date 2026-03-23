@@ -7,6 +7,11 @@ import { callGroq, callGemini, callOllama } from "@/lib/ai-providers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { openUserApiKey } from "@/lib/user-api-keys-crypto";
+import {
+  buildTranslatePayload,
+  mergeTranslatedIntoResult,
+  parseTranslatedExtractionJson,
+} from "@/lib/translate-extraction-json";
 
 interface ExpandPayload {
   action: "expand";
@@ -48,7 +53,19 @@ interface QuestionPayload {
   ollamaModel?: string;
 }
 
-type ActionPayload = ExpandPayload | ComparePayload | QuestionPayload;
+interface TranslatePayload {
+  action: "translate";
+  result: ExtractionResult;
+  provider: "groq" | "gemini" | "ollama";
+  groqApiKey?: string;
+  groqModel?: string;
+  geminiApiKey?: string;
+  geminiModel?: string;
+  ollamaUrl?: string;
+  ollamaModel?: string;
+}
+
+type ActionPayload = ExpandPayload | ComparePayload | QuestionPayload | TranslatePayload;
 
 function buildContextText(ctx: { title?: string; summary?: string; keyIdeas?: string[]; structuredNotes?: string }): string {
   const parts: string[] = [];
@@ -116,12 +133,49 @@ async function runAction(payload: ActionPayload): Promise<string> {
   return callOllama(ollamaUrl, ollamaModel, messages);
 }
 
+const TRANSLATE_MAX_TOKENS = 12_000;
+
+async function runTranslateModel(payload: TranslatePayload): Promise<string> {
+  const provider = payload.provider;
+  const groqApiKey = payload.groqApiKey || process.env.GROQ_API_KEY || "";
+  const groqModel = payload.groqModel || process.env.GROQ_MODEL || "llama-3.1-8b-instant";
+  const geminiApiKey = payload.geminiApiKey || process.env.GEMINI_API_KEY || "";
+  const geminiModel = payload.geminiModel || process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  const ollamaUrl = validateOllamaUrl(payload.ollamaUrl || process.env.OLLAMA_URL || "http://localhost:11434");
+  const ollamaModel = payload.ollamaModel || process.env.OLLAMA_MODEL || "llama3.1";
+
+  const input = buildTranslatePayload(payload.result);
+  const systemPrompt = `Ты профессиональный переводчик (английский → русский) для обучающих и технических материалов.
+Пользователь пришлёт JSON с текстами результата извлечения знаний. Переведи все человекочитаемые строки на русский язык: title, summary, keyIdeas, flashcards (question и answer), structuredNotes (сохраняй Markdown-разметку), tags, codeSnippets (только title и explanation — не добавляй поле code), extractedLinks (label и description при наличии).
+Верни один валидный JSON того же вида: те же ключи, те же длины массивов. Без комментариев, без обёртки в markdown.
+Не переводи URL. Не выдумывай новые поля.`;
+
+  const userContent = JSON.stringify(input);
+  const messages = [
+    { role: "system" as const, content: systemPrompt },
+    { role: "user" as const, content: userContent },
+  ];
+  const opts = { temperature: 0.15, maxTokens: TRANSLATE_MAX_TOKENS };
+
+  if (provider === "groq") {
+    if (!groqApiKey) throw new ValidationError("API-ключ Groq не указан");
+    return callGroq(groqApiKey, groqModel, messages, opts);
+  }
+  if (provider === "gemini") {
+    if (!geminiApiKey) throw new ValidationError("API-ключ Gemini не указан");
+    return callGemini(geminiApiKey, geminiModel, messages, opts);
+  }
+  return callOllama(ollamaUrl, ollamaModel, messages, opts);
+}
+
 export async function POST(request: NextRequest) {
   const reqId = Math.random().toString(36).slice(2, 8);
   try {
     const payload = (await request.json().catch(() => null)) as ActionPayload | null;
-    if (!payload?.action || !["expand", "compare", "question"].includes(payload.action)) {
-      throw new ValidationError("Неизвестное действие. Укажите action: expand, compare или question.");
+    if (!payload?.action || !["expand", "compare", "question", "translate"].includes(payload.action)) {
+      throw new ValidationError(
+        "Неизвестное действие. Укажите action: expand, compare, question или translate."
+      );
     }
     const session = await auth();
     if (session?.user?.email) {
@@ -133,6 +187,24 @@ export async function POST(request: NextRequest) {
         if (payload.provider === "gemini" && !payload.geminiApiKey && m) payload.geminiApiKey = m;
       }
     }
+
+    if (payload.action === "translate") {
+      if (!payload.result || typeof payload.result !== "object") {
+        throw new ValidationError("Для translate передайте полный объект result.");
+      }
+      const raw = await runTranslateModel(payload);
+      let parsed;
+      try {
+        parsed = parseTranslatedExtractionJson(raw);
+      } catch {
+        throw new ValidationError(
+          "Не удалось разобрать ответ модели. Попробуйте другую модель или сократите материал."
+        );
+      }
+      const translated = mergeTranslatedIntoResult(payload.result, parsed);
+      return NextResponse.json({ translated });
+    }
+
     const text = await runAction(payload);
     return NextResponse.json({ text });
   } catch (e) {

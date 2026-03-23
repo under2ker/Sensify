@@ -1,14 +1,16 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Главная страница", () => {
-  test("загружается и отображает заголовок", async ({ page }) => {
+  test("загружается и отображает бренд в шапке", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Sensify — на главную/i })).toBeVisible({ timeout: 15_000 });
   });
 
   test("отображает форму ввода", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByPlaceholder(/url|вставьте|ссылка/i)).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.getByPlaceholder(/github\.com|Вставьте URL|вставьте статью/i).first()
+    ).toBeVisible({ timeout: 15_000 });
   });
 
   test("skip-link: фокус показывает «Перейти к содержимому»", async ({ page }) => {
