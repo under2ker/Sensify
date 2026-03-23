@@ -16,7 +16,7 @@
 
 ## Phase 1+
 
-Часть пунктов закрыта в коде (см. чеклист §4.1 в `TZ_PRODUCTION_EDITION.md`): Retry-After, Sentry по env, persist без ключей, провайдеры AI, Pino, **Zustand по слайсам** (`src/stores/slices/`).
+Часть пунктов закрыта в коде (см. чеклист §4.1 в `TZ_PRODUCTION_EDITION.md`): Retry-After, Sentry по env, persist без ключей, провайдеры AI, Pino, **Zustand по слайсам**, **репозитории Prisma** (`src/lib/db/repositories/`).
 
 ## Переменные окружения (Phase 0)
 

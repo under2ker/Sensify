@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { findShareById } from "@/lib/db/repositories/share.repository";
 
 export async function GET(
   _request: NextRequest,
@@ -7,9 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const share = await prisma.share.findUnique({
-      where: { id },
-    });
+    const share = await findShareById(id);
 
     if (!share) {
       return NextResponse.json({ error: "Ссылка не найдена или истекла" }, { status: 404 });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createShareRecord } from "@/lib/db/repositories/share.repository";
 import { requireString, optionalString } from "@/lib/validate";
 import { handleApiError } from "@/lib/api-error-handler";
 import { expiresAtFromDays, parseShareExpiresInDays } from "@/lib/share-expiry";
@@ -74,9 +74,7 @@ export async function POST(request: NextRequest) {
       codeSnippets,
     });
 
-    const share = await prisma.share.create({
-      data: { data, expiresAt },
-    });
+    const share = await createShareRecord({ data, expiresAt });
 
     return NextResponse.json({ id: share.id });
   } catch (e) {

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import {
+  applyYooKassaPaymentSuccess,
+  findSubscriptionByUserId,
+} from "@/lib/db/repositories/billing.repository";
+import { findUserById } from "@/lib/db/repositories/user.repository";
 import { logger } from "@/lib/logger";
 import { isYooKassaWebhookIp, getClientIp } from "@/lib/yookassa-ip";
 
@@ -38,13 +42,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await findUserById(userId);
     if (!user) {
       console.warn("[webhooks/yookassa] User not found:", userId);
       return NextResponse.json({ received: true });
     }
 
-    const existing = await prisma.subscription.findUnique({ where: { userId } });
+    const existing = await findSubscriptionByUserId(userId);
     const baseDate = existing?.premiumUntil && new Date(existing.premiumUntil) > new Date()
       ? new Date(existing.premiumUntil)
       : new Date();
@@ -60,30 +64,14 @@ export async function POST(request: NextRequest) {
 
     const amount = body.object.amount;
 
-    await prisma.$transaction([
-      prisma.subscription.upsert({
-        where: { userId },
-        create: { userId, plan, premiumUntil },
-        update: { plan, premiumUntil },
-      }),
-      prisma.paymentLog.upsert({
-        where: { yookassaPaymentId: id },
-        create: {
-          yookassaPaymentId: id,
-          userId,
-          plan,
-          status: "succeeded",
-          amountValue: amount?.value ?? null,
-          currency: amount?.currency ?? null,
-        },
-        update: {
-          plan,
-          status: "succeeded",
-          amountValue: amount?.value ?? null,
-          currency: amount?.currency ?? null,
-        },
-      }),
-    ]);
+    await applyYooKassaPaymentSuccess({
+      userId,
+      plan,
+      premiumUntil,
+      yookassaPaymentId: id,
+      amountValue: amount?.value ?? null,
+      currency: amount?.currency ?? null,
+    });
 
     return NextResponse.json({ received: true });
   } catch (err) {

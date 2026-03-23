@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
-import { prisma } from "@/lib/prisma";
+import { revokePremiumSubscription } from "@/lib/db/repositories/billing.repository";
+import { findUserByEmailWithSubscription } from "@/lib/db/repositories/user.repository";
 
 export async function POST(req: Request) {
   try {
@@ -19,10 +20,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Укажите email" }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: { subscription: true },
-    });
+    const user = await findUserByEmailWithSubscription(email);
     if (!user) {
       return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
     }
@@ -30,13 +28,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "У пользователя нет подписки" }, { status: 400 });
     }
 
-    await prisma.subscription.update({
-      where: { userId: user.id },
-      data: {
-        plan: "free",
-        premiumUntil: null,
-      },
-    });
+    await revokePremiumSubscription(user.id);
 
     return NextResponse.json({ success: true });
   } catch (e) {

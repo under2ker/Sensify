@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { findUserByEmailWithSubscription } from "@/lib/db/repositories/user.repository";
 
 export async function GET() {
   try {
@@ -9,10 +9,7 @@ export async function GET() {
       return NextResponse.json({ hasPremium: false });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: { subscription: true },
-    });
+    const user = await findUserByEmailWithSubscription(session.user.email);
 
     if (!user?.subscription) {
       return NextResponse.json({ hasPremium: false });

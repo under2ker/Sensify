@@ -1564,7 +1564,7 @@ Phase 2 — Architecture Refactoring
 
 [x] Разбить стор на слайсы: `src/stores/slices/{ui,history,settings}-slice.ts`, сборка и persist в `src/lib/store.ts`, тип `AppState` в `src/stores/app-state.ts`
 
-[ ] Repository pattern для Prisma: src/lib/db/repositories/
+[x] Repository pattern для Prisma: `src/lib/db/repositories/` (share, user, billing; подключено к share, premium, grant/revoke, webhook ЮKassa, admin payments — остальные handlers постепенно)
 
 [x] Pino: `src/lib/logger.ts` (уровень через `SENSIFY_LOG_LEVEL`; расширение userId — по мере надобности)
 

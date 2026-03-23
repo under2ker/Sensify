@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
-import { prisma } from "@/lib/prisma";
+import { grantPremiumOneYear } from "@/lib/db/repositories/billing.repository";
+import { findUserByEmailWithSubscription } from "@/lib/db/repositories/user.repository";
 
 export async function POST(req: Request) {
   try {
@@ -18,30 +19,13 @@ export async function POST(req: Request) {
     const bodyEmail = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     if (bodyEmail) targetEmail = bodyEmail;
 
-    const user = await prisma.user.findUnique({
-      where: { email: targetEmail },
-      include: { subscription: true },
-    });
+    const user = await findUserByEmailWithSubscription(targetEmail);
 
     if (!user) {
       return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
     }
 
-    const premiumUntil = new Date();
-    premiumUntil.setFullYear(premiumUntil.getFullYear() + 1);
-
-    await prisma.subscription.upsert({
-      where: { userId: user.id },
-      create: {
-        userId: user.id,
-        plan: "premium",
-        premiumUntil,
-      },
-      update: {
-        plan: "premium",
-        premiumUntil,
-      },
-    });
+    const premiumUntil = await grantPremiumOneYear(user.id);
 
     return NextResponse.json({
       success: true,

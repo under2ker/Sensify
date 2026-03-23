@@ -25,6 +25,7 @@
 | **A11y** | Skip-link → `#main-content`, якорь на ключевых страницах |
 | **Перфоманс** | `useShallow`, dynamic панелей на главной, LazyMarkdownPreview, memo в output, optimizePackageImports, prune rate-limit Map |
 | **Стор** | Zustand: слайсы UI / история / настройки (`src/stores/slices/`), единый `persist` в `src/lib/store.ts` |
+| **БД** | Репозитории Prisma: `src/lib/db/repositories/` (share, user, billing) для части API |
 | **Безопасность** | SSRF для fetch URL; Ollama URL + whitelist; rate limit verify-groq/gemini; production CSP + HSTS в `next.config.ts`; см. [`SECURITY_PREMIUM.md`](./SECURITY_PREMIUM.md) |
 | **E2E** | Playwright: главная (+ skip-link), вход, публичные `/changelog`, `/premium`, `/about` |
 | **Unit** | Vitest: `npm run test` (share-expiry, validate Ollama URL); CI |

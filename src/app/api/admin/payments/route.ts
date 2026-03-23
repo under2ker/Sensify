@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
-import { prisma } from "@/lib/prisma";
+import { listRecentPaymentLogsWithUserEmail } from "@/lib/db/repositories/billing.repository";
 
 const LIMIT = 80;
 
@@ -16,20 +16,7 @@ export async function GET() {
       return NextResponse.json({ error: "Доступ запрещён" }, { status: 403 });
     }
 
-    const rows = await prisma.paymentLog.findMany({
-      take: LIMIT,
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        yookassaPaymentId: true,
-        plan: true,
-        amountValue: true,
-        currency: true,
-        status: true,
-        createdAt: true,
-        user: { select: { email: true } },
-      },
-    });
+    const rows = await listRecentPaymentLogsWithUserEmail(LIMIT);
 
     return NextResponse.json(
       rows.map((r) => ({
