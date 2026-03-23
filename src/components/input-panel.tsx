@@ -24,9 +24,16 @@ import {
   Crown,
   BookmarkPlus,
   Trash2,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAppStore } from "@/lib/store";
 import { useShallow } from "zustand/react/shallow";
 import Link from "next/link";
@@ -85,16 +92,24 @@ const recommendedPreset: Record<InputType, ExtractionPreset> = {
   text: "default",
 };
 
-const inputTabs: { value: InputType; label: string; icon: React.ReactNode }[] = [
+const inputTabsMore: { value: InputType; label: string; icon: React.ReactNode }[] = [
+  { value: "youtube", label: "YouTube", icon: <Youtube className="w-4 h-4" /> },
+  { value: "notion", label: "Notion", icon: <Layout className="w-4 h-4" /> },
+];
+
+const inputTabsMain: { value: InputType; label: string; icon: React.ReactNode }[] = [
   { value: "github", label: "GitHub", icon: <Github className="w-4 h-4" /> },
   { value: "reddit", label: "Reddit", icon: <MessageSquare className="w-4 h-4" /> },
   { value: "url", label: "Ссылка", icon: <Globe className="w-4 h-4" /> },
   { value: "telegram", label: "Telegram", icon: <MessageCircle className="w-4 h-4" /> },
   { value: "rss", label: "RSS", icon: <Rss className="w-4 h-4" /> },
   { value: "pdf", label: "PDF", icon: <FileText className="w-4 h-4" /> },
-  { value: "youtube", label: "YouTube", icon: <Youtube className="w-4 h-4" /> },
-  { value: "notion", label: "Notion", icon: <Layout className="w-4 h-4" /> },
   { value: "text", label: "Текст", icon: <Type className="w-4 h-4" /> },
+];
+
+const inputTabs: { value: InputType; label: string; icon: React.ReactNode }[] = [
+  ...inputTabsMain,
+  ...inputTabsMore,
 ];
 
 export interface InputPanelRef {
@@ -340,8 +355,8 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
         <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-sm overflow-hidden flex flex-col flex-1 min-h-0 shadow-sm transition-shadow duration-200 hover:shadow-md">
           <div className="shrink-0 px-2.5 pt-2 pb-1.5">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Источник</p>
-            <TabsList className="flex flex-wrap gap-1 h-auto p-0 bg-transparent">
-              {inputTabs.map((tab) => (
+            <TabsList className="flex flex-wrap gap-1 h-auto p-0 bg-transparent items-center">
+              {inputTabsMain.map((tab) => (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
@@ -351,6 +366,33 @@ export const InputPanel = forwardRef<InputPanelRef, { onExtract: () => void }>(
                   {tab.label}
                 </TabsTrigger>
               ))}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "inline-flex items-center gap-0.5 px-2 py-1 rounded-md text-[11px] font-medium text-muted-foreground transition-all hover:text-foreground hover:bg-muted/50 outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                      (activeInputTab === "youtube" || activeInputTab === "notion") &&
+                        "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                    )}
+                  >
+                    Ещё
+                    <ChevronDown className="size-3.5 opacity-70 shrink-0" aria-hidden />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="min-w-[9rem]">
+                  {inputTabsMore.map((tab) => (
+                    <DropdownMenuItem
+                      key={tab.value}
+                      className="text-[11px] cursor-pointer"
+                      onSelect={() => setActiveInputTab(tab.value)}
+                    >
+                      <span className="shrink-0 opacity-70 [&_svg]:size-3.5">{tab.icon}</span>
+                      {tab.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </TabsList>
           </div>
 
