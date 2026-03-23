@@ -193,7 +193,11 @@ docker run -p 3000:3000 sensify
 
 ## Деплой
 
-На Vercel задайте: `GROQ_API_KEY`, `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL`, `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` (для платежей).
+**Самый простой способ:** [vercel.com/new](https://vercel.com/new) → Import GitHub-репозиторий → Vercel сам соберёт проект при каждом push в `main` (отдельный workflow не обязателен).
+
+**Переменные окружения на Vercel:** `GROQ_API_KEY`, `DATABASE_URL`, `AUTH_SECRET`, `NEXTAUTH_URL`, `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` (для платежей), при необходимости `GEMINI_API_KEY`, `SENTRY_DSN`, `TURSO_*` / `ENCRYPTION_KEY` — см. `.env.example`.
+
+**Деплой через GitHub Actions** (workflow `.github/workflows/deploy-vercel.yml`): в репозитории GitHub → **Settings → Secrets and variables → Actions** добавьте `VERCEL_TOKEN` (токен с [vercel.com/account/tokens](https://vercel.com/account/tokens)), `VERCEL_ORG_ID` и `VERCEL_PROJECT_ID` (из **Vercel → Project → Settings → General**). Затем **Actions → Deploy (Vercel) → Run workflow** или push в `main`.
 
 SQLite не подходит для production на Vercel (несколько инстансов). Используйте Turso, PlanetScale или Supabase — см. [docs/DATABASE_PRODUCTION.md](docs/DATABASE_PRODUCTION.md), [docs/PLANNED_FEATURES.md](docs/PLANNED_FEATURES.md) и [docs/STATUS.md](docs/STATUS.md).
 
