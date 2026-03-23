@@ -4,8 +4,17 @@ const API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 function handleError(status: number, errMsg: string): never {
   if (status === 401) throw new Error("Неверный API-ключ Groq. Получите бесплатный ключ на console.groq.com");
+  if (status === 403) {
+    throw new Error(
+      "Groq отклонил запрос (403). Проверьте ключ в настройках, лимиты и регион аккаунта. При необходимости переключитесь на Gemini или Ollama."
+    );
+  }
   if (status === 429) throw new Error("Превышен лимит запросов Groq. Подождите минуту и попробуйте снова.");
-  throw new Error(errMsg);
+  const trimmed = errMsg.trim();
+  if (!trimmed || /^forbidden$/i.test(trimmed)) {
+    throw new Error(`Ошибка Groq (код ${status}). Проверьте ключ и статус сервиса.`);
+  }
+  throw new Error(trimmed);
 }
 
 export function createGroqProvider(apiKey: string, model: string): AIProvider {

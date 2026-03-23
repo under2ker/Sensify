@@ -74,6 +74,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import type { ExtractedLink } from "@/types";
 import { normalizeCodeSnippets } from "@/lib/extract/normalize-code-snippets";
+import { humanizeExtractErrorMessage } from "@/lib/humanize-extract-error";
 
 export default function HomePage() {
   const { data: session, status: sessionStatus } = useSession();
@@ -152,7 +153,7 @@ export default function HomePage() {
           setLimitReached(true);
           if (typeof data.resetsAt === "string") setLimitResetsAt(data.resetsAt);
         }
-        throw new Error(data.error || "Ошибка извлечения");
+        throw new Error(humanizeExtractErrorMessage(data.error || "Ошибка извлечения"));
       }
       const result = {
         id: generateId(),
@@ -177,7 +178,9 @@ export default function HomePage() {
       setLimitResetsAt(null);
       toast.success("Повторное извлечение готово!");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Ошибка извлечения";
+      const message = humanizeExtractErrorMessage(
+        error instanceof Error ? error.message : "Ошибка извлечения"
+      );
       setStatus("error");
       setErrorMessage(message);
       toast.error(message);
@@ -259,7 +262,7 @@ export default function HomePage() {
             setLimitReached(true);
             if (typeof err.resetsAt === "string") setLimitResetsAt(err.resetsAt);
           }
-          throw new Error(err.error || "Ошибка извлечения");
+          throw new Error(humanizeExtractErrorMessage(err.error || "Ошибка извлечения"));
         }
         const reader = response.body?.getReader();
         if (!reader) throw new Error("Нет потока ответа");
@@ -325,7 +328,7 @@ export default function HomePage() {
                 }
                 return;
             } else if (obj.t === "error") {
-              throw new Error(obj.e || "Ошибка");
+              throw new Error(humanizeExtractErrorMessage(String(obj.e || "Ошибка")));
             }
           }
         }
@@ -346,7 +349,7 @@ export default function HomePage() {
           setLimitReached(true);
           if (typeof data.resetsAt === "string") setLimitResetsAt(data.resetsAt);
         }
-        throw new Error(data.error || "Ошибка извлечения");
+        throw new Error(humanizeExtractErrorMessage(data.error || "Ошибка извлечения"));
       }
 
       const result = {
@@ -388,8 +391,9 @@ export default function HomePage() {
         toast.info("Извлечение отменено");
         return;
       }
-      const message =
-        error instanceof Error ? error.message : "Что-то пошло не так";
+      const message = humanizeExtractErrorMessage(
+        error instanceof Error ? error.message : "Что-то пошло не так"
+      );
       setStatus("error");
       setStreamingChars(0);
       setErrorMessage(message);
