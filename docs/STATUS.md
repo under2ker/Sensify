@@ -12,19 +12,21 @@
 | **Извлечение** | Groq, **Gemini**, Ollama; стриминг; пресеты dev; лимиты 10/день (автор.) и 3/день (гость); burst rate limit на `POST /api/extract` |
 | **Сохранить страницу** | Readability + Markdown по URL |
 | **Результат** | Табы: резюме, идеи, карточки, заметки, **код**, **ссылки**; редактирование блоков; AI-действия (углубиться, сравнить, вопросы) |
-| **История** | Сайдбар, поиск, import/export JSON, persist |
+| **История** | Сайдбар, поиск, import/export JSON, persist; вкладки Недавние / Сохранённые / Корзина (локально) |
 | **Пресеты** | 7 встроенных + **«Мои пресеты»** (до 14, **только localStorage**) |
 | **Экспорт** | Буфер, «Красивый текст»; **премиум:** Obsidian, Notion JSON, Markdown, **PDF** (клиент pdf-lib), **Notion API** (child page) |
 | **Премиум** | ЮKassa, webhook IP-check, подписка в БД; проверка на сервере для Notion; предпросмотр экспорта: фрагмент + блок копирования без премиума |
 | **Платежи (админ)** | Таблица `PaymentLog`, запись из webhook `payment.succeeded`, **GET /api/admin/payments**, блок в админке |
 | **Аккаунт** | Groq/Gemini ключи в БД, **ранняя подгрузка** после входа (`AccountApiKeysSync`) |
 | **Webhook** | POST результата после извлечения; [`WEBHOOK_DEVELOPERS.md`](./WEBHOOK_DEVELOPERS.md) |
+| **Шаринг** | Публичная ссылка `/s/[id]`; срок действия (`expiresAt` в БД, настройка в аккаунте, проверка в `GET /api/share/[id]`) |
 | **Auth** | NextAuth, профиль, статистика |
 | **Админка** | Пользователи, выдача/снятие премиума, поиск, пагинация, **журнал платежей** |
 | **A11y** | Skip-link → `#main-content`, якорь на ключевых страницах |
 | **Перфоманс** | `useShallow`, dynamic панелей на главной, LazyMarkdownPreview, memo в output, optimizePackageImports, prune rate-limit Map |
 | **Безопасность** | SSRF для fetch URL; rate limit verify-groq/gemini; см. [`SECURITY_PREMIUM.md`](./SECURITY_PREMIUM.md) |
 | **E2E** | Playwright: главная (+ skip-link), вход, публичные `/changelog`, `/premium`, `/about` |
+| **Ввод** | zod + красная обводка полей перед извлечением |
 | **Доки** | `DATABASE_PRODUCTION.md`, `PERFORMANCE_NOTES.md`, `NOTION_EXPORT.md`, `SECURITY_PREMIUM.md` |
 
 ---
@@ -48,14 +50,13 @@
 | Пункт | Примечание |
 |-------|------------|
 | **Уведомления** | Колокол в header |
-| **Сайдбар** | Табы Recent / Saved / Shared / Trash — нужен backend и модели |
+| **Сайдбар** | Клиент: Recent / Saved / Trash; **Shared** и синк между устройствами — при необходимости backend |
 | **Облачные пресеты** | См. частично |
-| **Input validation** | Красная обводка полей (zod + UI), см. DESIGN_CHECKLIST |
 | **Lighthouse ≥ 85** | Не замерялось в CI |
 | **Контраст WCAG AA** | Требуется аудит токенов |
 | **Production БД** | SQLite → Turso и др., см. `DATABASE_PRODUCTION.md` |
 | **Ниша: фаза 5** | Контент-маркетинг, опционально `/developers` — см. `NICHE_DEVELOPERS_TRANSITION_PLAN.md` |
-| **Optional niche** | Свернуть YouTube/Notion в «Ещё» — не делалось |
+| **Optional niche** | Доп. упрощение вкладок источников — по необходимости |
 
 ---
 

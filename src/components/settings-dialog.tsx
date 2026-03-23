@@ -29,6 +29,7 @@ import {
   FileText,
   Zap,
   Download,
+  Link2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -1145,6 +1146,41 @@ export function SettingsDialog() {
                 aria-label="URL вебхука для отправки результата"
                 className="w-full h-9 px-3 rounded-lg bg-muted/50 border border-border text-xs placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
               />
+            </div>
+
+            <div className="space-y-3 pt-4 border-t border-border">
+              <div className="flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-muted-foreground" />
+                <h4 className="text-sm font-medium">Публичная ссылка</h4>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Срок действия для новых ссылок «Поделиться» в результате извлечения. После истечения страница по ссылке недоступна.
+              </p>
+              <label htmlFor="settings-share-expiry" className="sr-only">
+                Срок действия публичной ссылки
+              </label>
+              <select
+                id="settings-share-expiry"
+                value={
+                  settings.shareLinkExpiresDays === null
+                    ? "never"
+                    : String(settings.shareLinkExpiresDays)
+                }
+                onChange={(e) => {
+                  const v = e.target.value;
+                  updateSettings({
+                    shareLinkExpiresDays:
+                      v === "never" ? null : (Number(v) as 7 | 30 | 365),
+                  });
+                }}
+                aria-label="Срок действия публичной ссылки"
+                className="w-full h-9 px-3 rounded-lg bg-muted/50 border border-border text-xs focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              >
+                <option value="never">Без срока</option>
+                <option value="7">7 дней</option>
+                <option value="30">30 дней</option>
+                <option value="365">365 дней</option>
+              </select>
             </div>
 
             <div className="space-y-3 pt-4 border-t border-border">

@@ -233,6 +233,7 @@ export const useAppStore = create<AppState>()(
         webhookUrl: "",
         streaming: true,
         saveToHistory: true,
+        shareLinkExpiresDays: null,
       },
       updateSettings: (newSettings) =>
         set((state) => ({
@@ -345,6 +346,8 @@ export const useAppStore = create<AppState>()(
           s.settings.streaming = true;
         if (s?.settings && !("saveToHistory" in s.settings))
           (s.settings as Record<string, unknown>).saveToHistory = true;
+        if (s?.settings && !("shareLinkExpiresDays" in s.settings))
+          (s.settings as Record<string, unknown>).shareLinkExpiresDays = null;
         if (s?.settings && !("geminiApiKey" in s.settings))
           (s.settings as Record<string, unknown>).geminiApiKey = "";
         if (s?.settings && !("geminiModel" in s.settings))

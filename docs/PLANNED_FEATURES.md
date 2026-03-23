@@ -13,7 +13,7 @@
 ## Продукт
 
 - Экспорт: Notion **child page по API** — v1.8.7 (`docs/NOTION_EXPORT.md`); **database** с кастомными полями — позже. PDF — v1.8.6.
-- Sidebar: табы Recent / Saved / Shared / Trash (нужен backend)
+- Sidebar: табы Recent / Saved / Trash (локально); Shared + синк — при появлении backend
 - Сохранённые пользовательские пресеты — **локально в браузере** (панель ввода, v1.9.1); синхронизация с аккаунтом — позже
 - Admin: журнал платежей — **v1.9.3** (`PaymentLog`, webhook ЮKassa, `/api/admin/payments`, блок в админке)
 - Уведомления (колокол в header) — опционально

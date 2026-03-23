@@ -1,6 +1,6 @@
 # Sensify — ТЗ Production Edition (v1.9.3 → v2.0 target)
 
-> **Источник:** `Sensify_TZ_Production.docx` (март 2026). Текст извлечён из DOCX автоматически: структура таблиц Word здесь представлена списками/абзацами, не как в оригинале.
+> **Источник:** `Sensify_TZ_Production.docx` (март 2026). Текст перенесён из исходного DOCX; структура таблиц Word здесь представлена списками и абзацами, не как в оригинале.
 >
 > **Актуальность кода:** сверяйте с **[`STATUS.md`](./STATUS.md)** и репозиторием — отдельные формулировки ниже (например, про E2E или абстракцию AI) могут отставать от фактической реализации.
 
@@ -1570,19 +1570,19 @@ Phase 2 — Architecture Refactoring
 
 Phase 3 — Feature Completion
 
-[ ] Sidebar: вкладки Recent / Saved (isPinned) / Shared (isShared) / Trash (deletedAt)
+[x] Sidebar: вкладки Recent / Saved / Trash (isPinned, deletedAt; локально); Shared — отдельно при backend
 
-[ ] Share: expiresAt в БД, проверка при GET /s/[id], UI для выбора срока
+[x] Share: expiresAt в БД, проверка при GET /api/share/[id], настройка срока в UI (Настройки → Аккаунт)
 
-[ ] Export: retry кнопка в OutputPanel при ошибке AI
+[x] Export: retry кнопка в OutputPanel при ошибке AI
 
 [ ] Пользовательские пресеты: синхронизация с аккаунтом (БД)
 
-[ ] Input validation: красная обводка полей при ошибке (zod + UI feedback)
+[x] Input validation: красная обводка полей при ошибке (zod + UI feedback)
 
 [ ] Уведомления: bell icon в header с базовым списком (новая фича, оплата)
 
-[ ] YouTube / Notion: решить — убрать в «Ещё» collapsible или оставить
+[x] YouTube / Notion: убрать в «Ещё» (dropdown)
 
 Phase 4 — Quality & Testing
 

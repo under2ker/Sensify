@@ -100,6 +100,9 @@ export interface ExportOptions {
   filename: string;
 }
 
+/** Срок жизни создаваемой публичной ссылки (Настройки → Аккаунт) */
+export type ShareLinkExpiresDays = null | 7 | 30 | 365;
+
 export interface AppSettings {
   provider: AIProvider;
   groqApiKey: string;
@@ -128,4 +131,6 @@ export interface AppSettings {
   streaming: boolean;
   /** Сохранять результат в историю после извлечения */
   saveToHistory: boolean;
+  /** Срок действия новых ссылок «Поделиться» (null = без срока) */
+  shareLinkExpiresDays: ShareLinkExpiresDays;
 }

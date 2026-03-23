@@ -109,9 +109,11 @@ model Extraction {
 }
 
 model Share {
-  id        String   @id @default(cuid())
-  data      String   // JSON ExtractionResult
-  createdAt DateTime @default(now())
+  id        String    @id @default(cuid())
+  data      String // JSON ExtractionResult
+  createdAt DateTime  @default(now())
+  /** null = бессрочно; иначе после этой даты GET возвращает 404 */
+  expiresAt DateTime?
 
   @@map("shares")
 }

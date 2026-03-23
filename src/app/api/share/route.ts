@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireString, optionalString } from "@/lib/validate";
 import { handleApiError } from "@/lib/api-error-handler";
+import { expiresAtFromDays, parseShareExpiresInDays } from "@/lib/share-expiry";
 
 export async function POST(request: NextRequest) {
   const reqId = Math.random().toString(36).slice(2, 8);
@@ -53,6 +54,9 @@ export async function POST(request: NextRequest) {
       )
       .slice(0, 24);
 
+    const expiresInDays = parseShareExpiresInDays(body?.expiresInDays);
+    const expiresAt = expiresAtFromDays(expiresInDays);
+
     const data = JSON.stringify({
       id,
       title,
@@ -71,7 +75,7 @@ export async function POST(request: NextRequest) {
     });
 
     const share = await prisma.share.create({
-      data: { data },
+      data: { data, expiresAt },
     });
 
     return NextResponse.json({ id: share.id });

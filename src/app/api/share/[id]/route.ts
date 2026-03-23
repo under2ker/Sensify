@@ -15,6 +15,10 @@ export async function GET(
       return NextResponse.json({ error: "Ссылка не найдена или истекла" }, { status: 404 });
     }
 
+    if (share.expiresAt && share.expiresAt.getTime() < Date.now()) {
+      return NextResponse.json({ error: "Ссылка не найдена или истекла" }, { status: 404 });
+    }
+
     let result: unknown;
     try {
       result = JSON.parse(share.data);

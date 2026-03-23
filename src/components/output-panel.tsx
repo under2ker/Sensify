@@ -183,6 +183,7 @@ const CopyButton = memo(function CopyButton({ text }: { text: string }) {
 function ShareButton({ result }: { result: ExtractionResult }) {
   const [loading, setLoading] = useState(false);
   const [shared, setShared] = useState(false);
+  const shareLinkExpiresDays = useAppStore((s) => s.settings.shareLinkExpiresDays);
 
   const handleShare = async () => {
     setLoading(true);
@@ -191,7 +192,7 @@ function ShareButton({ result }: { result: ExtractionResult }) {
       const res = await fetch("/api/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(result),
+        body: JSON.stringify({ ...result, expiresInDays: shareLinkExpiresDays }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Ошибка");
