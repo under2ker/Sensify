@@ -1,34 +1,25 @@
 /**
  * Структурированный логгер на Pino.
  *
- * Production  → JSON (для log-агрегаторов: Datadog, Sentry, Vercel Logs).
- * Development → цветной human-readable вывод (ANSI).
+ * JSON-строки в stdout (dev и production). Без `transport` / worker — иначе Next.js
+ * даёт MODULE_NOT_FOUND на `worker.js` в `.next/server/vendor-chunks`.
  *
  * Уровень: SENSIFY_LOG_LEVEL = debug | info | warn | error (по умолчанию info).
  */
 
 import pino from "pino";
 
-const isDev = process.env.NODE_ENV !== "production";
+const level = (process.env.SENSIFY_LOG_LEVEL ?? process.env.PKE_LOG_LEVEL ?? "info").toLowerCase();
 
-const pinoInstance = pino({
-  level: (process.env.SENSIFY_LOG_LEVEL ?? process.env.PKE_LOG_LEVEL ?? "info").toLowerCase(),
-  ...(isDev
-    ? {
-        transport: {
-          target: "pino/file",
-          options: { destination: 1 },
-        },
-        formatters: {
-          level: (label: string) => ({ level: label }),
-        },
-      }
-    : {
-        formatters: {
-          level: (label: string) => ({ level: label }),
-        },
-      }),
-});
+const pinoInstance = pino(
+  {
+    level,
+    formatters: {
+      level: (label: string) => ({ level: label }),
+    },
+  },
+  pino.destination(1)
+);
 
 export const logger = {
   api(route: string, reqId: string, msg: string) {
@@ -65,7 +56,6 @@ export const logger = {
     pinoInstance.debug({ route, event: "debug", data }, msg);
   },
 
-  /** Лог с userId — для действий авторизованных пользователей */
   userAction(route: string, reqId: string, userId: string, msg: string) {
     pinoInstance.info({ route, reqId, userId, event: "user_action" }, msg);
   },
