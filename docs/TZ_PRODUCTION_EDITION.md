@@ -1562,7 +1562,7 @@ Phase 2 — Architecture Refactoring
 
 [x] Provider Pattern: `src/lib/ai/providers/{groq,gemini,ollama}.ts` + `ai-providers.ts`
 
-[ ] Разбить src/lib/store.ts → src/stores/{ui,history,settings}.ts
+[x] Разбить стор на слайсы: `src/stores/slices/{ui,history,settings}-slice.ts`, сборка и persist в `src/lib/store.ts`, тип `AppState` в `src/stores/app-state.ts`
 
 [ ] Repository pattern для Prisma: src/lib/db/repositories/
 
