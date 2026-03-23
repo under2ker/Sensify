@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: ExtractionRequest = await request.json();
-    let sourceType: SourceTypePayload =
+    const sourceType: SourceTypePayload =
       body.sourceType === "substack" ? "url" : body.sourceType;
     const { source, quality, language, provider } = body;
 

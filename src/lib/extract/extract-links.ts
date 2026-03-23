@@ -70,7 +70,7 @@ function looksLikeMarkupNoise(s: string): boolean {
  */
 function sanitizeLinkDescription(raw: string, maxLen = 220): string | null {
   if (!raw) return null;
-  let t = raw.replace(/\s+/g, " ").trim();
+  const t = raw.replace(/\s+/g, " ").trim();
   if (t.length < 14) return null;
   if (looksLikeMarkupNoise(t)) return null;
   if (letterCount(t) < 10) return null;

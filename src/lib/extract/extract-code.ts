@@ -86,7 +86,7 @@ export function extractCodeBlocksFromHtml(html: string, options?: { max?: number
       if (!lang) lang = parseLanguageFromAttrs(codeInner[1]);
       inner = codeInner[2];
     }
-    let code = decodeBasicEntities(stripTagsKeepNewlines(inner)).replace(/\r\n/g, "\n").trim();
+    const code = decodeBasicEntities(stripTagsKeepNewlines(inner)).replace(/\r\n/g, "\n").trim();
     if (code.length < MIN_CODE_LEN) continue;
     out.push({
       language: lang,
