@@ -10,12 +10,13 @@
 | SQLite → Turso / Neon | ⏳ Не начато | Инструкция: [`DATABASE_PRODUCTION.md`](./DATABASE_PRODUCTION.md) |
 | In-memory → Redis rate limit | 🟡 Частично | При `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` burst на `POST /api/extract` и verify-* идут через Upstash; иначе как раньше in-memory (`distributed-rate-limit.ts`) |
 | Шифрование API-ключей в БД | 🟡 Частично | При `ENCRYPTION_KEY` (32 byte, hex64 или base64) ключи Groq/Gemini шифруются AES-256-GCM (`user-api-keys-crypto.ts`). Без env — поведение как раньше (plain). После включения ключа пересохраните ключи в настройках, если старые записи были plain |
-| CSP в next.config | ✅ Сделано | Production: `Content-Security-Policy` + базовые security headers (`next.config.ts`) |
-| npm audit в CI | ✅ Сделано | `npm audit --audit-level=critical` без `continue-on-error` (`.github/workflows/ci.yml`) |
+| CSP / HSTS в next.config | ✅ Сделано | Production: `Content-Security-Policy`, `Strict-Transport-Security`, X-Frame-Options и др. (`next.config.ts`) |
+| npm audit в CI | ✅ Сделано | `npm audit --audit-level=critical`; шаг `npm run test` (Vitest) |
+| Unit-тесты (Vitest) | 🟡 Старт | `src/lib/__tests__/*`; `npm run test` |
 
 ## Phase 1+
 
-Не начато — см. чеклист в `TZ_PRODUCTION_EDITION.md` §4.1.
+Часть пунктов закрыта в коде (см. чеклист §4.1 в `TZ_PRODUCTION_EDITION.md`): Retry-After, Sentry по env, persist без ключей, провайдеры AI, Pino.
 
 ## Переменные окружения (Phase 0)
 

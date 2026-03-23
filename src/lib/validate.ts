@@ -123,9 +123,22 @@ export function validateOllamaUrl(urlString: string): string {
     if (host === "0.0.0.0") {
       throw new ValidationError("Ollama URL: 0.0.0.0 запрещён, используйте localhost или 127.0.0.1");
     }
+
+    const parsedOrigin = parsed.origin.toLowerCase();
+    const raw = process.env.OLLAMA_URL_WHITELIST || "";
+    const allowed = raw.split(",").map((s) => s.trim()).filter(Boolean);
+    for (const w of allowed) {
+      try {
+        if (new URL(w).origin.toLowerCase() === parsedOrigin) return parsed.origin;
+      } catch {
+        /* skip invalid whitelist entry */
+      }
+    }
+
     const ipv4Match = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
     if (ipv4Match) {
-      const [, a, b] = ipv4Match.map(Number);
+      const a = Number(ipv4Match[1]);
+      const b = Number(ipv4Match[2]);
       if (a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a === 127) {
         throw new ValidationError("Ollama URL: приватные IP разрешены только через OLLAMA_URL_WHITELIST");
       }
@@ -138,14 +151,6 @@ export function validateOllamaUrl(urlString: string): string {
       throw new ValidationError("Ollama URL: приватные IPv6 разрешены только через OLLAMA_URL_WHITELIST");
     }
 
-    const raw = process.env.OLLAMA_URL_WHITELIST || "";
-    const allowed = raw.split(",").map((s) => s.trim()).filter(Boolean);
-    const parsedOrigin = parsed.origin.toLowerCase();
-    for (const w of allowed) {
-      try {
-        if (new URL(w).origin.toLowerCase() === parsedOrigin) return parsed.origin;
-      } catch { /* skip invalid whitelist entry */ }
-    }
     throw new ValidationError(
       "Ollama URL доступен только для localhost. Для внешних серверов укажите OLLAMA_URL_WHITELIST в .env"
     );

@@ -1536,37 +1536,37 @@ Phase 0 — Production Blockers (Критично)
 
 [ ] Миграция SQLite → Turso или Neon (Prisma adapter, env vars в CI/CD)
 
-[ ] Замена in-memory rate limiting → Upstash Redis (@upstash/ratelimit)
+[x] Кластерный burst для `POST /api/extract`: Upstash Redis при `UPSTASH_REDIS_REST_*` (`distributed-rate-limit.ts`), иначе in-memory
 
-[ ] Шифрование API-ключей в БД (AES-256-GCM, ENCRYPTION_KEY env)
+[x] Шифрование API-ключей в БД (AES-256-GCM, `ENCRYPTION_KEY` — см. `user-api-keys-crypto.ts`)
 
-[ ] CSP headers в next.config.js (Content-Security-Policy)
+[x] CSP + HSTS в `next.config.ts` (production)
 
-[ ] npm audit в CI — блокировать build при критических уязвимостях
+[x] npm audit в CI — `npm audit --audit-level=critical` (`.github/workflows/ci.yml`)
 
 Phase 1 — Security Hardening
 
 [ ] Перенос генерации PDF/Markdown/Obsidian на сервер (/api/export/{format})
 
-[ ] Убрать API-ключи из Zustand persist (только для UI-state)
+[x] API-ключи не сохраняются в persist Zustand (`partialize` обнуляет ключи)
 
-[ ] Усиление SSRF-проверок для Ollama URL (OLLAMA_URL_WHITELIST строже)
+[x] SSRF Ollama: `validateOllamaUrl` + whitelist до запрета приватных IP
 
-[ ] Добавить Retry-After header при 429 ответах
+[x] Retry-After header при 429 (extract, verify-groq/gemini, groq-models и др.)
 
-[ ] Sentry integration для error tracking в production
+[x] Sentry: `withSentryConfig` при заданном `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN`
 
 Phase 2 — Architecture Refactoring
 
 [ ] Выделить сервисный слой: src/services/{extraction,export,billing}
 
-[ ] Provider Pattern для AI: src/lib/ai/providers/{groq,gemini,ollama}.ts
+[x] Provider Pattern: `src/lib/ai/providers/{groq,gemini,ollama}.ts` + `ai-providers.ts`
 
 [ ] Разбить src/lib/store.ts → src/stores/{ui,history,settings}.ts
 
 [ ] Repository pattern для Prisma: src/lib/db/repositories/
 
-[ ] Структурированное логирование: Pino с requestId, userId, event
+[x] Pino: `src/lib/logger.ts` (уровень через `SENSIFY_LOG_LEVEL`; расширение userId — по мере надобности)
 
 Phase 3 — Feature Completion
 
@@ -1588,7 +1588,7 @@ Phase 4 — Quality & Testing
 
 [ ] E2E Playwright: полные user journeys (список из FR-05 NFR-03)
 
-[ ] Unit тесты (Vitest): fetchers, prompts, validator, exporters — 80%+
+[ ] Unit тесты (Vitest): старт — `share-expiry`, `validateOllamaUrl`; дальше fetchers, prompts, exporters — цель 80%+
 
 [ ] WCAG AA audit: контраст токенов, keyboard nav, aria-live на output
 

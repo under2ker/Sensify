@@ -44,7 +44,7 @@ export class AppError extends Error {
     this.userMessage = options.userMessage ?? message;
     this.statusCode = options.statusCode ?? 500;
     this.context = options.context;
-    Object.setPrototypeOf(this, AppError.prototype);
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 
   toJSON() {

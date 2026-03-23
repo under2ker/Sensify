@@ -172,6 +172,7 @@ e2e/                              # Playwright E2E тесты
 | `npm run build` | Сборка |
 | `npm run start` | Продакшен |
 | `npm run lint` | ESLint |
+| `npm run test` | Юнит-тесты (Vitest) |
 | `npm run test:e2e` | E2E тесты (Playwright) |
 | `npm run db:push` | Применить схему Prisma |
 | `npm run db:studio` | Prisma Studio |

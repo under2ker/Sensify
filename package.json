@@ -14,6 +14,8 @@
     "db:studio": "prisma studio",
     "grant-premium": "node scripts/grant-premium.mjs",
     "seed-users": "node scripts/seed-users.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:e2e": "playwright test",
     "demo-pdf": "node scripts/generate-demo-pdf.mjs"
   },
@@ -73,6 +75,7 @@
     "postcss": "^8.4.49",
     "prisma": "^6.0.0",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.4"
   }
 }
